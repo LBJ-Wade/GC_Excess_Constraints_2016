@@ -52,19 +52,10 @@ class fermionic_dm_spin0_med(object):
                 (1. + 9. * v ** 2. / (8. * (1. - 4. * self.mx ** 2 / self.m_a ** 2.)))
         return sigma
 
-    def sig_therm_exact(self, temp):
-        x = self.mx / temp
-
-        def integrd(v, x):
-            hv = v / (2. * speed_light)
-            return hv ** 2 * np.exp (- x * hv ** 2. / (1. - hv ** 2.)) / \
-                (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v / speed_light)
-        them_avg = quad(integrd, 0., 2. * speed_light, args=x)
-        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
 
     def sigma_v(self, channel, v):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
-        # This is for specific annihilation products, not general!
+        # This is for specific annihilation products, not general -- for that call sim_v_all
         nc = color_number(channel)
         mass_f = get_mass(channel)
         if self.mx > mass_f:
@@ -144,7 +135,18 @@ class fermionic_dm_spin0_med(object):
                     (sn[i] * tn + sp[i] * tp) ** 2.
         return sigma
 
-    def x_freese_out(self):
+    def sig_therm_exact(self, temp):
+        x = self.mx / temp
+
+        def integrd(v, x):
+            hv = v / 2.
+            return hv ** 2 * np.exp(- x * hv ** 2. / (1. - hv ** 2.)) / \
+                   (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v)
+
+        them_avg = quad(integrd, 0., 2., args=x)
+        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
+
+    def x_freeze_out(self):
         g = dm_dof('fermion')
         tnew = 1.
         told = 0.
@@ -158,9 +160,9 @@ class fermionic_dm_spin0_med(object):
         return self.mx / tnew
 
     def omega_h(self):
-        xfo = self.x_freese_out()
+        xfo = self.x_freeze_out()
         gstar = effective_dof(self.mx / xfo)
-        jterm = quad(lambda x: self.sig_therm_exact(x) * 100. / (self.mx * speed_light), 0., self.mx / xfo)
+        jterm = quad(lambda x: self.sig_therm_exact(x) / self.mx, 0., self.mx / xfo)
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
@@ -211,15 +213,6 @@ class fermionic_dm_spin1_med(object):
                           self.lam_f_v ** 2. * (1. + 2. * (mass_f / self.m_v) ** 2.))
         return 1.
 
-    def sig_therm_exact(self, temp):
-        x = self.mx / temp
-
-        def integrd(v, x):
-            hv = v / (2. * speed_light)
-            return hv ** 2 * np.exp (- x * hv ** 2. / (1. - hv ** 2.)) / \
-                (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v / speed_light)
-        them_avg = quad(integrd, 0., 2. * speed_light, args=x)
-        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
 
     def sigma_v_all(self, v):
         sigma = 0.
@@ -322,8 +315,18 @@ class fermionic_dm_spin1_med(object):
                     (sn[i] * tn + sp[i] * tp) ** 2.
         return sigma
 
+    def sig_therm_exact(self, temp):
+        x = self.mx / temp
 
-    def x_freese_out(self):
+        def integrd(v, x):
+            hv = v / 2.
+            return hv ** 2 * np.exp(- x * hv ** 2. / (1. - hv ** 2.)) / \
+                   (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v)
+
+        them_avg = quad(integrd, 0., 2., args=x)
+        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
+
+    def x_freeze_out(self):
         g = dm_dof('fermion')
         tnew = 1.
         told = 0.
@@ -337,9 +340,9 @@ class fermionic_dm_spin1_med(object):
         return self.mx / tnew
 
     def omega_h(self):
-        xfo = self.x_freese_out()
+        xfo = self.x_freeze_out()
         gstar = effective_dof(self.mx / xfo)
-        jterm = quad(lambda x: self.sig_therm_exact(x) * 100. / (self.mx * speed_light), 0., self.mx / xfo)
+        jterm = quad(lambda x: self.sig_therm_exact(x) / self.mx, 0., self.mx / xfo)
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
@@ -383,15 +386,6 @@ class scalar_dm_spin0_med(object):
                          (self.lam_f_s ** 2. * (1. - 4. * (mass_f / self.m_a) ** 2.) + self.lam_f_p ** 2.)
         return 1.
 
-    def sig_therm_exact(self, temp):
-        x = self.mx / temp
-
-        def integrd(v, x):
-            hv = v / (2. * speed_light)
-            return hv ** 2 * np.exp (- x * hv ** 2. / (1. - hv ** 2.)) / \
-                (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v / speed_light)
-        them_avg = quad(integrd, 0., 2. * speed_light, args=x)
-        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
 
     def sigma_v_all(self, v):
         sigma = 0.
@@ -444,7 +438,18 @@ class scalar_dm_spin0_med(object):
                     (sn[i] * tn + sp[i] * tp) ** 2.
         return sigma
 
-    def x_freese_out(self):
+    def sig_therm_exact(self, temp):
+        x = self.mx / temp
+
+        def integrd(v, x):
+            hv = v / 2.
+            return hv ** 2 * np.exp(- x * hv ** 2. / (1. - hv ** 2.)) / \
+                   (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v)
+
+        them_avg = quad(integrd, 0., 2., args=x)
+        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
+
+    def x_freeze_out(self):
         g = dm_dof('scalar')
         tnew = 1.
         told = 0.
@@ -458,9 +463,9 @@ class scalar_dm_spin0_med(object):
         return self.mx / tnew
 
     def omega_h(self):
-        xfo = self.x_freese_out()
+        xfo = self.x_freeze_out()
         gstar = effective_dof(self.mx / xfo)
-        jterm = quad(lambda x: self.sig_therm_exact(x) * 100. / (self.mx * speed_light), 0., self.mx / xfo)
+        jterm = quad(lambda x: self.sig_therm_exact(x) / self.mx, 0., self.mx / xfo)
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
@@ -505,16 +510,6 @@ class scalar_dm_spin1_med(object):
                          (self.lam_f_a ** 2. * (1. - 4. * (mass_f / self.m_v) ** 2.) +
                           self.lam_f_v ** 2. * (1. + 2. * (mass_f / self.m_v) ** 2.))
         return 1.
-
-    def sig_therm_exact(self, temp):
-        x = self.mx / temp
-
-        def integrd(v, x):
-            hv = v / (2. * speed_light)
-            return hv ** 2 * np.exp (- x * hv ** 2. / (1. - hv ** 2.)) / \
-                (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v / speed_light)
-        them_avg = quad(integrd, 0., 2. * speed_light, args=x)
-        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
 
     def sigma_v_all(self, v):
         sigma = 0.
@@ -563,8 +558,19 @@ class scalar_dm_spin1_med(object):
                     (sn[i] * tn + sp[i] * tp) ** 2.
         return sigma
 
-    def x_freese_out(self):
-        g = dm_dof('scalar')
+    def sig_therm_exact(self, temp):
+        x = self.mx / temp
+
+        def integrd(v, x):
+            hv = v / 2.
+            return hv ** 2 * np.exp(- x * hv ** 2. / (1. - hv ** 2.)) / \
+                   (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v)
+
+        them_avg = quad(integrd, 0., 2., args=x)
+        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
+
+    def x_freeze_out(self):
+        g = dm_dof('fermion')
         tnew = 1.
         told = 0.
         while np.abs(told - tnew) > 0.0001:
@@ -577,12 +583,11 @@ class scalar_dm_spin1_med(object):
         return self.mx / tnew
 
     def omega_h(self):
-        xfo = self.x_freese_out()
+        xfo = self.x_freeze_out()
         gstar = effective_dof(self.mx / xfo)
-        jterm = quad(lambda x: self.sig_therm_exact(x) * 100. / (self.mx * speed_light), 0., self.mx / xfo)
+        jterm = quad(lambda x: self.sig_therm_exact(x) / self.mx, 0., self.mx / xfo)
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
-
 
 class vector_dm_spin0_med(object):
     """
@@ -623,15 +628,6 @@ class vector_dm_spin0_med(object):
                          (self.lam_f_s ** 2. * (1. - 4. * (mass_f / self.m_a) ** 2.) + self.lam_f_p ** 2.)
         return 1.
 
-    def sig_therm_exact(self, temp):
-        x = self.mx / temp
-
-        def integrd(v, x):
-            hv = v / (2. * speed_light)
-            return hv ** 2 * np.exp (- x * hv ** 2. / (1. - hv ** 2.)) / \
-                (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v / speed_light)
-        them_avg = quad(integrd, 0., 2. * speed_light, args=x)
-        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
 
     def sigma_v_all(self, v):
         sigma = 0.
@@ -684,7 +680,18 @@ class vector_dm_spin0_med(object):
                     (sn[i] * tn + sp[i] * tp) ** 2.
         return sigma
 
-    def x_freese_out(self):
+    def sig_therm_exact(self, temp):
+        x = self.mx / temp
+
+        def integrd(v, x):
+            hv = v / 2.
+            return hv ** 2 * np.exp(- x * hv ** 2. / (1. - hv ** 2.)) / \
+                   (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v)
+
+        them_avg = quad(integrd, 0., 2., args=x)
+        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
+
+    def x_freeze_out(self):
         g = dm_dof('vector')
         tnew = 1.
         told = 0.
@@ -698,12 +705,11 @@ class vector_dm_spin0_med(object):
         return self.mx / tnew
 
     def omega_h(self):
-        xfo = self.x_freese_out()
+        xfo = self.x_freeze_out()
         gstar = effective_dof(self.mx / xfo)
-        jterm = quad(lambda x: self.sig_therm_exact(x) * 100. / (self.mx * speed_light), 0., self.mx / xfo)
+        jterm = quad(lambda x: self.sig_therm_exact(x) / self.mx, 0., self.mx / xfo)
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
-
 
 class vector_dm_spin1_med(object):
     """
@@ -750,15 +756,6 @@ class vector_dm_spin1_med(object):
                           self.lam_f_v ** 2. * (1. + 2. * (mass_f / self.m_v) ** 2.))
         return 1.
 
-    def sig_therm_exact(self, temp):
-        x = self.mx / temp
-
-        def integrd(v, x):
-            hv = v / (2. * speed_light)
-            return hv ** 2 * np.exp (- x * hv ** 2. / (1. - hv ** 2.)) / \
-                (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v / speed_light)
-        them_avg = quad(integrd, 0., 2. * speed_light, args=x)
-        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
 
     def sigma_v_all(self, v):
         sigma = 0.
@@ -806,7 +803,18 @@ class vector_dm_spin1_med(object):
                     (sn[i] * tn + sp[i] * tp) ** 2.
         return sigma
 
-    def x_freese_out(self):
+    def sig_therm_exact(self, temp):
+        x = self.mx / temp
+
+        def integrd(v, x):
+            hv = v / 2.
+            return hv ** 2 * np.exp(- x * hv ** 2. / (1. - hv ** 2.)) / \
+                   (1. - hv ** 2.) ** (5. / 2.) * self.sigma_v_all(v)
+
+        them_avg = quad(integrd, 0., 2., args=x)
+        return 2. / np.sqrt(np.pi) * x ** (3. / 2.) * them_avg[0]
+
+    def x_freeze_out(self):
         g = dm_dof('vector')
         tnew = 1.
         told = 0.
@@ -820,9 +828,9 @@ class vector_dm_spin1_med(object):
         return self.mx / tnew
 
     def omega_h(self):
-        xfo = self.x_freese_out()
+        xfo = self.x_freeze_out()
         gstar = effective_dof(self.mx / xfo)
-        jterm = quad(lambda x: self.sig_therm_exact(x) * 100. / (self.mx * speed_light), 0., self.mx / xfo)
+        jterm = quad(lambda x: self.sig_therm_exact(x) / self.mx, 0., self.mx / xfo)
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 

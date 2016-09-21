@@ -37,16 +37,14 @@ except KeyError:
 dm_spin = ['fermion']  # scalar, fermion, vector
 dm_real = [T]
 dm_type = ['dirac']  # dirac, majorana
-dm_mass = [35.]
+dm_mass = [25.]
 mediator = ['v']  # s = scalar, v = vector, f = fermion
 dm_bilinear = ['av']  # v=vector, av=axialvector, s=scalar, ps=pseudoscalar
 channel = ['s']  # s or t
 ferm_bilinear = ['av']
 
-# What fermions does the mediator couple to, and with what relative strength
-ferms = ['b', 'c', 'u', 'd', 't', 's']
-# What would you like to Caclculate
-direct = [F, ['LUX']]  # Calculate direct detection bounds, fermionic coupling, target element
+# What would you like to Calculate
+direct = [F]  # Calculate direct detection bounds, fermionic coupling, target element
 lhc = [T]  # Calculate LHC bounds
 thermal_coups = T
 
@@ -57,6 +55,10 @@ mass_med = np.logspace(0., 3., 300)
 
 candidates = len(dm_spin)
 for i in range(candidates):
+    if dm_mass[i] == 25.:
+        ferms = ['b', 'c', 'u', 'd', 't', 's']
+    elif dm_mass[i] == 35.:
+        ferms = ['b']
     # Print Starting info:
     if dm_spin[i] == 'fermion':
         print 'Dark Matter Particle: ', dm_type[i], dm_spin[i]
@@ -75,7 +77,7 @@ for i in range(candidates):
     else:
         print 'Mediator: Fermion'
     print 'DM bilinear: ', dm_bilinear[i], 'Fermion bilinear: ', ferm_bilinear[i]
-    print 'Annihlation to: ', ferms[i]
+    print 'Annihlation to: ', ferms
 
     fig_name = plot_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
                           dm_bilinear[i], channel[i], ferm_bilinear[i])
@@ -133,6 +135,7 @@ for i in range(candidates):
         for j, m_a in enumerate(mass_med):
             dm_class = build_dm_class(channel[i], dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
                                       ferms, m_a, dm_couplings, fm_couplings)
+            #TODO -- NEED TO SOLVE THIS, LINE BELOW IS WRONG
             t_cups[j] = np.sqrt(dm_class.omega_h() / (omega_dm[0] * hubble ** 2.))
 
     plt.plot(mass_med, t_cups, lw=1, color='k')
