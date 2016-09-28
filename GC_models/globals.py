@@ -38,13 +38,13 @@ def build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
                                                 dm_lambdas, lam_f[0], lam_f[1])
     elif channel == 't':
         if dm_spin == 'fermion' and mediator == 's' and dm_type == 'majorana':
-            return dirac_fermionic_dm_spin0_med_tchannel(dm_mass, f, m_a, dm_lambdas[0], dm_lambdas[1])
+            return dirac_fermionic_dm_spin0_med_tchannel(dm_mass, f, m_a, dm_lambdas, dm_lambdas)
         if dm_spin == 'fermion' and mediator == 'v' and dm_type == 'dirac':
-            return dirac_fermionic_dm_spin1_med_tchannel(dm_mass, f, m_a, dm_lambdas[0], dm_lambdas[1])
+            return dirac_fermionic_dm_spin1_med_tchannel(dm_mass, f, m_a, dm_lambdas, dm_lambdas)
         if dm_spin == 'vector' and mediator == 'f' and not dm_real:
-            return complex_vector_dm_spin_half_med_tchannel(dm_mass, f, m_a, dm_lambdas[0], dm_lambdas[1])
+            return complex_vector_dm_spin_half_med_tchannel(dm_mass, f, m_a, dm_lambdas, dm_lambdas)
         if dm_spin == 'vector' and mediator == 'f' and dm_real:
-            return real_vector_dm_spin_half_med_tchannel(dm_mass, f, m_a, dm_lambdas[0], dm_lambdas[1])
+            return real_vector_dm_spin_half_med_tchannel(dm_mass, f, m_a, dm_lambdas, dm_lambdas)
         else:
             print 't-channel model not yet implemented...'
             raise ValueError
@@ -57,6 +57,7 @@ def dm_couples(dm_spin, bilinear):
     # Depending on bilinear list, sets lambda_dm couplings to 0 or 1 for
     # scalar, pseduo scalar, vector, or axial vector (in this order)
     #print dm_spin, bilinear
+
     if dm_spin == 'fermion':
         lambda_coef = np.zeros(4)
         if bilinear == 's':

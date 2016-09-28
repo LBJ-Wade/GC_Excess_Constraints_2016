@@ -18,7 +18,7 @@ def t_coupling_omega(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
 
 
 
-def direct_detection_csec(dm_class, channel, dm_spin, dm_real, dm_type, mediator,
+def direct_detection_csec(channel, dm_spin,  mediator,
                           dm_bilinear, ferm_bilinear, dm_mass):
     mass_med = np.logspace(0., 3., 300)
     clim_list = []

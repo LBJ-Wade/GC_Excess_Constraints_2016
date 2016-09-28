@@ -82,15 +82,19 @@ for i in range(candidates):
                           dm_bilinear[i], channel[i], ferm_bilinear[i])
 
     # Returns DM lambda couplings for s, ps, v, a in that order (1 or 0)
-    dm_couplings = dm_couples(dm_spin[i], dm_bilinear[i])
-    fm_couplings = fm_couples(ferm_bilinear[i])
-    if mediator[i] == 's':
-        dm_couplings = dm_couplings[:2]
-        fm_couplings = fm_couplings[:2]
-    elif mediator[i] == 'v':
-        dm_couplings = dm_couplings[2:]
-        fm_couplings = fm_couplings[2:]
-        print 'DM [V: {:.0f}, AV: {:.0f}]'.format(dm_couplings[0], dm_couplings[1])
+    if channel[i] == 's':
+        dm_couplings = dm_couples(dm_spin[i], dm_bilinear[i])
+        fm_couplings = fm_couples(ferm_bilinear[i])
+        if mediator[i] == 's':
+            dm_couplings = dm_couplings[:2]
+            fm_couplings = fm_couplings[:2]
+            print 'DM [S: {:.0f}, PS: {:.0f}]'.format(dm_couplings[0], dm_couplings[1])
+        elif mediator[i] == 'v':
+            dm_couplings = dm_couplings[2:]
+            fm_couplings = fm_couplings[2:]
+            print 'DM [V: {:.0f}, AV: {:.0f}]'.format(dm_couplings[0], dm_couplings[1])
+    else:
+        couplings = np.array([1.])
 
     if np.sum(np.concatenate((dm_couplings, fm_couplings))) == 0.:
         print dm_couplings
@@ -102,7 +106,6 @@ for i in range(candidates):
     ax = plt.gca()
     ax.set_xscale('log')
     ax.set_yscale('log')
-
 
     if channel[i] == 's':
         pl.ylim([10. ** -6., 10.])
@@ -125,16 +128,14 @@ for i in range(candidates):
         print 'Calculating direct detection bounds...'
         dm_class = build_dm_class(channel[i], dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
                                   ferms, 1., dm_couplings, fm_couplings)
-        mass_med, bound = direct_detection_csec(dm_class, channel[i], dm_spin[i], dm_real[i], dm_type[i],
-                                                mediator[i], dm_bilinear[i], ferm_bilinear[i], dm_mass[i])
+        mass_med, bound = direct_detection_csec(channel[i], dm_spin[i], mediator[i],
+                                                dm_bilinear[i], ferm_bilinear[i], dm_mass[i])
         plt.plot(mass_med, bound, '--', lw=1, color='blue')
         arsize = len(mass_med)
-        textpt = [mass_med[int(.8 * arsize)], bound[int(.8 * arsize)] + .1]
-
+        textpt = [mass_med[int(.8 * arsize)], bound[int(.8 * arsize)]]
         plt.text(textpt[0], textpt[1], 'LUX', color='blue', fontsize=16,
-                 rotation=np.arctan(2.) * 180. / np.pi * (3. / 4.),
+                 rotation=np.arctan(.66) * 180. / np.pi,
                  ha='center', va='bottom')
-
 
     if lhc[i]:
         print 'Calculating LHC bounds...'
@@ -148,10 +149,15 @@ for i in range(candidates):
             plt.plot(med, plt_bnds, '--', lw=1, color='red')
 
     if thermal_coups:
-        mass_med_1 = np.logspace(0., np.log10(2 * dm_mass[i] * 0.75), 10)
-        mass_med_3 = np.logspace(np.log10(2 * dm_mass[i] * 1.25), 3.1, 20)
-        mass_med_2 = np.logspace(np.log10(2 * dm_mass[i] * 0.8), np.log10(2 * dm_mass[i] * 1.2), 20)
-        mass_med = np.concatenate((mass_med_1, mass_med_2, mass_med_3))
+        if channel == 's':
+            mass_med_1 = np.logspace(0., np.log10(2 * dm_mass[i] * 0.75), 10)
+            mass_med_3 = np.logspace(np.log10(2 * dm_mass[i] * 1.25), 3.1, 20)
+            mass_med_2 = np.logspace(np.log10(2 * dm_mass[i] * 0.8), np.log10(2 * dm_mass[i] * 1.2), 20)
+            mass_med = np.concatenate((mass_med_1, mass_med_2, mass_med_3))
+            med_full = np.logspace(0., 3., 300)
+        else:
+            mass_med = np.logspace(2., 3., 15)
+            med_full = np.logspace(2., 3., 100)
         t_cups = np.zeros_like(mass_med)
         print 'Calculating thermal couplings...'
         for j, m_a in enumerate(mass_med):
@@ -160,14 +166,14 @@ for i in range(candidates):
                                                         dm_mass[i], mediator[i], ferms, m_a,
                                                         fm_couplings, dm_couplings), disp=False)
             t_cups[j] = np.power(10., solve_c)
-        med_full = np.logspace(0., 3., 300)
+
         plt_therm = 10. ** interpola(np.log10(med_full), np.log10(mass_med), np.log10(t_cups))
         plt.plot(med_full, plt_therm, lw=1, color='k')
     inter_label, mlab = plot_labeler(dm_spin[i], dm_real[i], dm_type[i], dm_bilinear[i], channel[i],
                                      ferm_bilinear[i], mediator[i])
     plt.text(750, 5. * 10 ** -6, inter_label, verticalalignment='bottom',
              horizontalalignment='right', fontsize=16)
-    plt.text(750, 1.5 * 10 ** -6, mlab + ' = {:.0f}'.format(dm_mass[i]), verticalalignment='bottom',
+    plt.text(750, 1.5 * 10 ** -6, mlab + ' = {:.0f} GeV'.format(dm_mass[i]), verticalalignment='bottom',
              horizontalalignment='right', fontsize=16)
     fig.set_tight_layout(True)
     pl.savefig(fig_name)
