@@ -103,8 +103,13 @@ for i in range(candidates):
     ax.set_xscale('log')
     ax.set_yscale('log')
 
-    pl.xlim([1., 1000.])
-    pl.ylim([10. ** -6., 10.])
+
+    if channel[i] == 's':
+        pl.ylim([10. ** -6., 10.])
+        pl.xlim([1., 1000.])
+    else:
+        pl.ylim([10**-2., 10.])
+        pl.xlim([100., 1000.])
     if mediator[i] == 's':
         pl.xlabel(r'$m_a$   [GeV]', fontsize=20)
     elif mediator[i] == 'v':
@@ -123,6 +128,12 @@ for i in range(candidates):
         mass_med, bound = direct_detection_csec(dm_class, channel[i], dm_spin[i], dm_real[i], dm_type[i],
                                                 mediator[i], dm_bilinear[i], ferm_bilinear[i], dm_mass[i])
         plt.plot(mass_med, bound, '--', lw=1, color='blue')
+        arsize = len(mass_med)
+        textpt = [mass_med[int(.8 * arsize)], bound[int(.8 * arsize)] + .1]
+
+        plt.text(textpt[0], textpt[1], 'LUX', color='blue', fontsize=16,
+                 rotation=np.arctan(2.) * 180. / np.pi * (3. / 4.),
+                 ha='center', va='bottom')
 
 
     if lhc[i]:
@@ -152,9 +163,11 @@ for i in range(candidates):
         med_full = np.logspace(0., 3., 300)
         plt_therm = 10. ** interpola(np.log10(med_full), np.log10(mass_med), np.log10(t_cups))
         plt.plot(med_full, plt_therm, lw=1, color='k')
-    inter_label = plot_labeler(dm_spin[i], dm_real[i], dm_type[i], dm_bilinear[i], channel[i],
-                               ferm_bilinear[i], mediator[i])
-    plt.text(750, 4. * 10 ** -6, inter_label, verticalalignment='bottom',
+    inter_label, mlab = plot_labeler(dm_spin[i], dm_real[i], dm_type[i], dm_bilinear[i], channel[i],
+                                     ferm_bilinear[i], mediator[i])
+    plt.text(750, 5. * 10 ** -6, inter_label, verticalalignment='bottom',
+             horizontalalignment='right', fontsize=16)
+    plt.text(750, 1.5 * 10 ** -6, mlab + ' = {:.0f}'.format(dm_mass[i]), verticalalignment='bottom',
              horizontalalignment='right', fontsize=16)
     fig.set_tight_layout(True)
     pl.savefig(fig_name)

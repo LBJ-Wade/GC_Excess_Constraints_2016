@@ -236,7 +236,7 @@ class fermionic_dm_spin1_med_schannel(object):
                 (self.lam_f_a ** 2. * (self.lam_chi_a ** 2. * (self.m_v ** 2. - 4. * self.mx ** 2.) *
                                        (mass_f ** 4. * (-72. * self.m_v ** 2. * self.mx ** 2. + 17. *
                                                         self.m_v ** 4. + 144. * self.mx ** 4.) +
-                                        mass_f ** 2. * (48. * self.m_v ** 2. + self.mx ** 4. - 22. *
+                                        mass_f ** 2. * (48. * self.m_v ** 2. * self.mx ** 4. - 22. *
                                                         self.m_v ** 4. * self.mx ** 2. - 96. * self.mx ** 6.) +
                                         8. * self.m_v ** 4. * self.mx ** 4.) -
                                         2. * self.lam_chi_v ** 2. * self.m_v ** 4. * (mass_f ** 2. - self.mx ** 2.) *
@@ -245,9 +245,10 @@ class fermionic_dm_spin1_med_schannel(object):
                  self.lam_f_v ** 2. * self.m_v ** 4. * (self.lam_chi_v ** 2. *
                                                         (8. * self.mx ** 4 * (self.m_v ** 2. - 4. * mass_f ** 2.) -
                                                          4. * (mass_f * self.mx) ** 2. * (17. * mass_f ** 2. + self.m_v ** 2.) +
-                                                         5. * mass_f ** 2. * self.m_v ** 2. + 64. * self.mx ** 6.) -
-                                                        4. * self.lam_f_a ** 2. * (mass_f ** 2. * self.mx ** 2. + mass_f ** 4. -
-                                                                                   2. * self.mx ** 4.) * (self.m_v ** 2. - 4. * self.mx ** 2.))))
+                                                         5. * mass_f ** 4. * self.m_v ** 2. + 64. * self.mx ** 6.) -
+                                                        4. * self.lam_chi_a ** 2. *
+                                                        (mass_f ** 2. * self.mx ** 2. + mass_f ** 4. -
+                                                         2. * self.mx ** 4.) * (self.m_v ** 2. - 4. * self.mx ** 2.))))
             if sv < 0:
                 return 0.
             else:
@@ -863,6 +864,7 @@ class vector_dm_spin1_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
+
 class dirac_fermionic_dm_spin0_med_tchannel(object):
     """
     Lagrangian = [\bar{\chi} (\lambda_s + \lambda_p \gamma^5)f A +
@@ -916,9 +918,9 @@ class dirac_fermionic_dm_spin0_med_tchannel(object):
                                                                self.lam_s ** 2 + 13 * self.lam_s ** 4) +
                                  mass_f ** 4 * (-11. * self.lam_p ** 4. + 14. * self.lam_p ** 2 *
                                                 self.lam_s ** 2 - 11. * self.lam_s ** 4) -
-                                 8. * self.mx ** 4. * (self.lam_s ** 2 * self.lam_p ** 2.) ** 2) +
+                                 8. * self.mx ** 4. * (self.lam_s ** 2 + self.lam_p ** 2.) ** 2) +
                  2. * self.m_a ** 2. * (mass_f ** 2 - self.mx ** 2) *
-                 (self.lam_p ** 4. * (mass_f - self.mx) ** 2 * (8. * mass_f * self.mx + 11. * mass_f - 12 * self.mx ** 2.) -
+                 (self.lam_p ** 4. * (mass_f - self.mx) ** 2 * (8. * mass_f * self.mx + 11. * mass_f ** 2. - 12 * self.mx ** 2.) -
                   2. * self.lam_p ** 2. * self.lam_s ** 2 * (-19. * mass_f ** 2. * self.mx **2 +
                                                              7. * mass_f ** 4. + 12 * self.mx ** 4) +
                   self.lam_s ** 4. * (mass_f + self.mx) ** 2. * (-8. * mass_f * self.mx + 11. * mass_f ** 2. - 12. * self.mx ** 2)) -

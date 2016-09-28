@@ -133,6 +133,12 @@ def plot_labeler(dm_spin, dm_real, dm_type, dm_bilinear, channel, ferm_bilinear,
     f1 = r'$\bar{{f}}$'
     f2 = r'$f$'
     if dm_spin == 'fermion':
+        mtag = r'$m_\chi$'
+    elif dm_spin == 'scalar':
+        mtag = r'$m_\phi$'
+    else:
+        mtag = r'$m_X$'
+    if dm_spin == 'fermion':
         dm2 = r'$\chi$'
         if dm_type == 'dirac':
             dm1 = r'$\bar{{\chi}}$'
@@ -183,7 +189,7 @@ def plot_labeler(dm_spin, dm_real, dm_type, dm_bilinear, channel, ferm_bilinear,
             tag = dm1 + dm_bi + r'(1 \pm \gamma^5)' + f1 + med
         else:
             tag = med + dm_bi + r'(1 \pm \gamma^5)' + f1 + dm1
-    return tag
+    return tag, mtag
 
 
 def y_axis_label(dm_spin, dm_bilinear, channel, ferm_bilinear):
@@ -198,6 +204,7 @@ def y_axis_label(dm_spin, dm_bilinear, channel, ferm_bilinear):
             f_t = r'$g_{{f a}}$'
 
         if dm_spin == 'fermion':
+
             if dm_bilinear == 's':
                 d_t = r'$\lambda_{{\chi s}}$'
             elif dm_bilinear == 'ps':
@@ -207,8 +214,10 @@ def y_axis_label(dm_spin, dm_bilinear, channel, ferm_bilinear):
             else:
                 d_t = r'$g_{{\small \chi a}}$'
         elif dm_spin == 'scalar':
+
             d_t = r'$\mu_{{\phi}}$'
         else:
+
             d_t = r'$\mu_{{X}}$'
 
         return f_t + ' ' + d_t
