@@ -12,10 +12,13 @@ from helper import *
 import os
 from models import *
 from globals import *
+from solvers import *
 import pylab as pl
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import glob
+from scipy.interpolate import interp1d
+from scipy.optimize import fmin, minimize
 
 #  mpl.use('pdf')
 rc('font', **{'family': 'serif', 'serif': ['Times', 'Palatino']})
@@ -44,19 +47,15 @@ channel = ['s']  # s or t
 ferm_bilinear = ['av']
 
 # What would you like to Calculate
-direct = [F]  # Calculate direct detection bounds, fermionic coupling, target element
-lhc = [T]  # Calculate LHC bounds
+direct = [T]  # Calculate direct detection bounds, fermionic coupling, target element
+lhc = [F]  # Calculate LHC bounds
 thermal_coups = T
 
-inter_label = [r'$\bar{{\chi}} \gamma^\mu \gamma^5 \chi, \bar{{f}} \gamma^\mu \gamma^5 f$']
-
-
-mass_med = np.logspace(0., 3., 300)
 
 candidates = len(dm_spin)
 for i in range(candidates):
     if dm_mass[i] == 25.:
-        ferms = ['b', 'c', 'u', 'd', 't', 's']
+        ferms = ['b', 'c', 'u', 'd', 't', 's', 'e', 'mu', 'tau', 'nu_e', 'nu_mu', 'nu_tau']
     elif dm_mass[i] == 35.:
         ferms = ['b']
     # Print Starting info:
@@ -91,6 +90,13 @@ for i in range(candidates):
     elif mediator[i] == 'v':
         dm_couplings = dm_couplings[2:]
         fm_couplings = fm_couplings[2:]
+        print 'DM [V: {:.0f}, AV: {:.0f}]'.format(dm_couplings[0], dm_couplings[1])
+
+    if np.sum(np.concatenate((dm_couplings, fm_couplings))) == 0.:
+        print dm_couplings
+        print fm_couplings
+        print 'All Couplings are 0!'
+        raise ValueError
 
     fig = plt.figure(figsize=(8., 6.))
     ax = plt.gca()
@@ -104,24 +110,24 @@ for i in range(candidates):
     elif mediator[i] == 'v':
         pl.xlabel(r'$m_v$   [GeV]', fontsize=20)
     elif mediator[i] == 'f':
-        pl.xlabel(r'$m_f$   [GeV]', fontsize=20)
+        pl.xlabel(r'$m_{{\psi}}$   [GeV]', fontsize=20)
 
-    #TODO write code that returns proper ylabel dependent on channel, dm type, mediator, etc
-    pl.ylabel(r'$\lambda_\chi \lambda_f$', fontsize=20)
 
-    t_cups = np.zeros_like(mass_med)
+    ylab = y_axis_label(dm_spin[i], dm_bilinear[i], channel[i], ferm_bilinear[i])
+    pl.ylabel(ylab, fontsize=20)
 
-    if direct[0]:
+    if direct[i]:
         print 'Calculating direct detection bounds...'
-        for j, m_a in enumerate(mass_med):
-            dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
-                                      ferms, m_a, dm_couplings, fm_couplings)
-            if ferm_bilinear[i] == 's' and dm_bilinear[i] == 's':
-                pass
+        dm_class = build_dm_class(channel[i], dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                                  ferms, 1., dm_couplings, fm_couplings)
+        mass_med, bound = direct_detection_csec(dm_class, channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                mediator[i], dm_bilinear[i], ferm_bilinear[i], dm_mass[i])
+        plt.plot(mass_med, bound, '--', lw=1, color='blue')
 
-    if lhc[0]:
+
+    if lhc[i]:
         print 'Calculating LHC bounds...'
-        files = glob.glob(MAIN_PATH + '/Input_Data/*' + dm_bilinear[i] + '_' + ferm_bilinear[i] + '*.dat')
+        files = glob.glob(MAIN_PATH + '/Input_Data/LHC*' + dm_bilinear[i] + '_' + ferm_bilinear[i] + '*.dat')
         print files
         for f in files:
             load = np.loadtxt(f)
@@ -131,16 +137,24 @@ for i in range(candidates):
             plt.plot(med, plt_bnds, '--', lw=1, color='red')
 
     if thermal_coups:
+        mass_med_1 = np.logspace(0., np.log10(2 * dm_mass[i] * 0.75), 10)
+        mass_med_3 = np.logspace(np.log10(2 * dm_mass[i] * 1.25), 3.1, 20)
+        mass_med_2 = np.logspace(np.log10(2 * dm_mass[i] * 0.8), np.log10(2 * dm_mass[i] * 1.2), 20)
+        mass_med = np.concatenate((mass_med_1, mass_med_2, mass_med_3))
+        t_cups = np.zeros_like(mass_med)
         print 'Calculating thermal couplings...'
         for j, m_a in enumerate(mass_med):
-            dm_class = build_dm_class(channel[i], dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
-                                      ferms, m_a, dm_couplings, fm_couplings)
-            #TODO -- NEED TO SOLVE THIS, LINE BELOW IS WRONG
-            t_cups[j] = np.sqrt(dm_class.omega_h() / (omega_dm[0] * hubble ** 2.))
-
-    plt.plot(mass_med, t_cups, lw=1, color='k')
-
-    plt.text(750, 4. * 10 ** -6, inter_label[i], verticalalignment='bottom',
+            print 'M_a: ', m_a
+            solve_c = fmin(t_coupling_omega, -1.5, args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                        dm_mass[i], mediator[i], ferms, m_a,
+                                                        fm_couplings, dm_couplings), disp=False)
+            t_cups[j] = np.power(10., solve_c)
+        med_full = np.logspace(0., 3., 300)
+        plt_therm = 10. ** interpola(np.log10(med_full), np.log10(mass_med), np.log10(t_cups))
+        plt.plot(med_full, plt_therm, lw=1, color='k')
+    inter_label = plot_labeler(dm_spin[i], dm_real[i], dm_type[i], dm_bilinear[i], channel[i],
+                               ferm_bilinear[i], mediator[i])
+    plt.text(750, 4. * 10 ** -6, inter_label, verticalalignment='bottom',
              horizontalalignment='right', fontsize=16)
     fig.set_tight_layout(True)
     pl.savefig(fig_name)

@@ -30,13 +30,22 @@ def color_number(fermion):
         print 'Not a fermion?'
         raise ValueError
 
-def dm_dof(dm_spin):
+def dm_dof(dm_spin, dm_type):
     if dm_spin == 'scalar':
-        return 1.
+        if dm_type:
+            return 1.
+        else:
+            return 2.
     if dm_spin == 'fermion':
-        return 2.
+        if dm_type == 'dirac':
+            return 4.
+        else:
+            return 2.
     if dm_spin == 'vector':
-        return 3.
+        if dm_type:
+            return 3.
+        else:
+            return 6.
 
 def effective_dof(temp):
     geff = interp1d(loadgeff[:, 0], loadgeff[:, 1], kind='linear', bounds_error=False, fill_value='extrapolate')
@@ -88,3 +97,4 @@ def interpola(val, x, y):
             except:
                 f = interp1d(x, y, kind='linear').__call__(val)
     return f
+
