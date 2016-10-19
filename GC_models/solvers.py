@@ -10,21 +10,35 @@ except KeyError:
     MAIN_PATH = os.getcwd() + '/../'
 
 def t_coupling_omega(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
-                     ferms, m_a, fm_couplings, dm_couplings):
+                     ferms, m_a, fm_couplings, dm_couplings, c_ratio):
+    dm_couplings[dm_couplings != 0.] = 10. ** lam
+
+    dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
+                              ferms, m_a, dm_couplings, fm_couplings, c_ratio)
+    if np.abs(m_a - 2. * dm_mass) < 20.0:
+        return np.abs(dm_class.omega_h() - omega_dm[0] * hubble ** 2.)
+    else:
+        return np.abs(dm_class.omega_h_approx() - omega_dm[0] * hubble ** 2.)
+
+
+
+def narrow_width(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
+                ferms, m_a, fm_couplings, dm_couplings, wid):
     dm_couplings[dm_couplings != 0.] = 10. ** lam
     dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
                               ferms, m_a, dm_couplings, fm_couplings)
-    return np.abs(dm_class.omega_h() - omega_dm[0] * hubble ** 2.)
-
+    width = dm_class.mediator_width()
+    return np.abs(width / m_a - wid)
 
 
 def direct_detection_csec(channel, dm_spin,  mediator,
                           dm_bilinear, ferm_bilinear, dm_mass):
-    mass_med = np.logspace(0., 3., 300)
+
     clim_list = []
     file = []
     print 'In DD Bounds...'
     if channel == 's':
+        mass_med = np.logspace(0., 3., 300)
         print '         [DD] S-channel...'
         if dm_spin == 'fermion':
             print '         [DD] Fermionic DM'
@@ -103,18 +117,33 @@ def direct_detection_csec(channel, dm_spin,  mediator,
             else:
                 print 'Not Implemented...'
                 raise ValueError
-    elif channel == 't':
-        print 'Not here yet'
-        raise ValueError
 
+        for f in file:
+            load = np.loadtxt(f)
+            bound = 10. ** interpola(np.log10(mass_med), np.log10(load[:,0]), np.log10(load[:, 1]))
+
+    elif channel == 't':
+        mass_med = np.logspace(0., 4., 300)
+        if dm_spin == 'fermion':
+            if mediator == 's':
+                file = [MAIN_PATH +
+                        '/Input_Data/DD_tchannel_{:.0f}GeV_dirac_fermion_scalar_mediator.dat'.format(dm_mass)]
+            elif mediator == 'v':
+                file = [MAIN_PATH +
+                        '/Input_Data/DD_tchannel_{:.0f}GeV_dirac_fermion_scalar_mediator.dat'.format(dm_mass)]
+            else:
+                print 'Not Implemented...'
+                raise ValueError
+        else:
+            print 'Not here yet'
+            raise ValueError
+
+        for f in file:
+            load = np.loadtxt(f)
+            bound = 10. ** interpola(np.log10(mass_med), np.log10(load[:,0]), np.log10(load[:, 1]))
     else:
         print 'Model may be wrong or not implemented...'
         raise ValueError
 
-    for f in file:
-        load = np.loadtxt(f)
-        clim_list.append(np.sqrt(load / inv_GeV2_to_cm2))
-    clim = np.max(clim_list)
-    norm = clim
-    bound = norm * np.power(mass_med, 2.)
+
     return mass_med, bound

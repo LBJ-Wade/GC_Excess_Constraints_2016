@@ -57,6 +57,7 @@ def get_mass(particle):
                   1.275, 9.5 * 10 ** -2., 173., 4.18]
     return mass_table[particle_table.index(particle)]
 
+
 def nuclide_properties(nuc):
     if nuc == 'Xe':
         return [[54., 54., 54.], [129., 131., 132.],
