@@ -129,6 +129,8 @@ def plot_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
 
     return full_tag
 
+
+
 def file_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
                channel, ferm_bilinear, extra_tag=''):
     if dm_spin == 'fermion':
@@ -172,8 +174,13 @@ def file_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
 
 
 def plot_labeler(dm_spin, dm_real, dm_type, dm_bilinear, channel, ferm_bilinear, mediator):
-    f1 = r'$\bar{{f}}$'
-    f2 = r'$f$'
+    if channel == 's':
+        f1 = r'$\bar{{f}}$'
+        f2 = r'$f$'
+    else:
+        f1 = r'$\bar{{b}}$'
+        f2 = r'$b$'
+
     if dm_spin == 'fermion':
         mtag = r'$m_\chi$'
     elif dm_spin == 'scalar':
@@ -228,9 +235,9 @@ def plot_labeler(dm_spin, dm_real, dm_type, dm_bilinear, channel, ferm_bilinear,
             med = r'$\bar{{\psi}}$'
 
         if dm_spin == 'fermion':
-            tag = dm1 + dm_bi + r'$(1 \pm \gamma^5)$' + f1 + med
+            tag = dm1 + dm_bi + r'$P_R$' + f1 + med
         else:
-            tag = med + dm_bi + r'$(1 \pm \gamma^5)$' + f1 + dm1
+            tag = med + dm_bi + r'$P_R$' + f1 + dm1
     return tag, mtag
 
 

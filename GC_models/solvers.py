@@ -9,27 +9,43 @@ try:
 except KeyError:
     MAIN_PATH = os.getcwd() + '/../'
 
+
 def t_coupling_omega(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
                      ferms, m_a, fm_couplings, dm_couplings, c_ratio):
-    dm_couplings[dm_couplings != 0.] = 10. ** lam
+    new_coups = np.zeros_like(dm_couplings)
+    new_coups[dm_couplings != 0.] = 10. ** lam
 
     dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
-                              ferms, m_a, dm_couplings, fm_couplings, c_ratio)
-    if np.abs(m_a - 2. * dm_mass) < 20.0:
+                              ferms, m_a, new_coups, fm_couplings, c_ratio)
+    if np.abs(m_a - 2. * dm_mass) < 0.0:
         return np.abs(dm_class.omega_h() - omega_dm[0] * hubble ** 2.)
     else:
         return np.abs(dm_class.omega_h_approx() - omega_dm[0] * hubble ** 2.)
 
 
-
 def narrow_width(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
                 ferms, m_a, fm_couplings, dm_couplings, wid):
-    dm_couplings[dm_couplings != 0.] = 10. ** lam
+    new_coups = np.zeros_like(dm_couplings)
+    new_coups[dm_couplings != 0.] = 10. ** lam
     dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
-                              ferms, m_a, dm_couplings, fm_couplings)
+                              ferms, m_a, new_coups, fm_couplings, 0.)
     width = dm_class.mediator_width()
+
     return np.abs(width / m_a - wid)
 
+
+def cross_section_calc(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
+                       ferms, m_a, fm_couplings, dm_couplings, c_ratio):
+
+    new_coups = np.zeros_like(dm_couplings)
+    new_coups[dm_couplings != 0.] = lam
+
+    dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
+                              ferms, m_a, new_coups, fm_couplings, c_ratio)
+    x_freeze = dm_class.x_freeze_out()
+    sigma = dm_class.sig_therm_exact(dm_mass / x_freeze) * inv_GeV2_to_cm2 * 2.998 * 10 ** 10.
+
+    return sigma
 
 def direct_detection_csec(channel, dm_spin,  mediator,
                           dm_bilinear, ferm_bilinear, dm_mass):
