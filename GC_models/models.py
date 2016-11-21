@@ -11,7 +11,7 @@ class fermionic_dm_spin0_med_schannel(object):
     Lagrangian = [\bar{\chi} (\lamba_{\chi,s} + \lambda_{\chi,p} i \gamma^5) \chi +
     \bar{f} (\lamba_{f,s} + \lambda_{f,p} i \gamma^5) f] A
     """
-    def __init__(self, mx, dm_type, f, m_a, lam_chi_s, lam_chi_p, lam_f_s, lam_f_p, c_ratio=0.):
+    def __init__(self, mx, dm_type, f, m_a, lam_chi_s, lam_chi_p, lam_f_s, lam_f_p, c_ratio=0., tbeta=1.):
         self.mx = mx
         self.dm_type = dm_type
         self.m_a = m_a
@@ -21,9 +21,7 @@ class fermionic_dm_spin0_med_schannel(object):
         self.lam_f_p = lam_f_p
         self.f = f
         self.c_ratio = c_ratio
-        if self.dm_type == 'majorana':
-            self.lam_chi_s *= 2.
-            self.lam_chi_p *= 2.
+        self.tbeta = tbeta
 
     def sigma(self, s):
         sigma = 0.
@@ -43,7 +41,7 @@ class fermionic_dm_spin0_med_schannel(object):
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
-            sigma += self.sigma_v(ferm, v)
+            sigma += self.sigma_v(ferm, v, totferms=len(self.f))
         return sigma
 
     def sigma_v_thermal_approx(self, lam, v):
@@ -52,7 +50,7 @@ class fermionic_dm_spin0_med_schannel(object):
                 (1. + 9. * v ** 2. / (8. * (1. - 4. * self.mx ** 2 / self.m_a ** 2.))))
         return sigma
 
-    def sigma_v(self, channel, v):
+    def sigma_v(self, channel, v, totferms=1.):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
         # This is for specific annihilation products, not general -- for that call sim_v_all
         sv = 0.0
@@ -88,7 +86,7 @@ class fermionic_dm_spin0_med_schannel(object):
             gxp = np.sqrt(self.c_ratio * self.lam_chi_p * (self.lam_f_p + self.lam_f_p))
             gxs = np.sqrt(self.c_ratio * self.lam_chi_s * (self.lam_f_s + self.lam_f_p))
 
-            sv += (np.sqrt(self.mx**4)*gxp**2*gxs**2*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2)))/\
+            sv += (1./totferms) * ((np.sqrt(self.mx**4)*gxp**2*gxs**2*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2)))/\
                   (2.*self.mx**2*(2*self.mx**2 - self.m_a**2)**2*Pi) + \
                   (np.sqrt(self.mx**4)*(2*self.mx**6*gxp**4 - 36*self.mx**6*gxp**2*gxs**2 +
                                         18*self.mx**6*gxs**4 - 6*self.mx**4*gxp**4*self.m_a**2 +
@@ -97,7 +95,7 @@ class fermionic_dm_spin0_med_schannel(object):
                                         24*self.mx**2*gxp**2*gxs**2*self.m_a**4 + 20*self.mx**2*gxs**4*self.m_a**4 -
                                         2*gxp**4*self.m_a**6 + 3*gxp**2*gxs**2*self.m_a**6 -
                                         4*gxs**4*self.m_a**6)*v**2)/\
-                  (48.*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2))*(2*self.mx**2 - self.m_a**2)**4*Pi)
+                  (48.*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2))*(2*self.mx**2 - self.m_a**2)**4*Pi))
 
         return sv
 
@@ -149,21 +147,29 @@ class fermionic_dm_spin0_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
+        if self.c_ratio == 0.:
+            self.c_ratio = 1.
         width = 0.
-        gxs = np.sqrt(self.lam_chi_s * (self.lam_f_p + self.lam_f_s))
-        gxp = np.sqrt(self.lam_chi_p * (self.lam_f_p + self.lam_f_s))
-        if 2. * self.mx < self.m_a:
-            width += ((-4 * self.mx ** 2 * gxs ** 2 + (gxp ** 2 + gxs ** 2) * self.m_a ** 2) *
-                      np.sqrt(-4. * self.mx ** 2 * self.m_a ** 2 + self.m_a ** 4)) / (8. * (self.m_a ** 2) ** 1.5 * Pi)
-        for f in self.f:
-            mass_f = get_mass(f)
-            nc = color_number(f)
-            gfs = mass_f * np.sqrt(self.lam_f_s * (self.lam_chi_p + self.lam_chi_s)) * yuk
-            gfp = mass_f * np.sqrt(self.lam_f_p * (self.lam_chi_p + self.lam_chi_s)) * yuk
-            if 2. * mass_f < self.m_a:
-                width += nc*((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
-                          np.sqrt(-4*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
+        gxs = np.sqrt(self.c_ratio * self.lam_chi_s * (self.lam_f_p + self.lam_f_s))
+        gxp = np.sqrt(self.c_ratio * self.lam_chi_p * (self.lam_f_p + self.lam_f_s))
+        if dm:
+            if 2. * self.mx < self.m_a:
+                width += ((-4 * self.mx ** 2 * gxs ** 2 + (gxp ** 2 + gxs ** 2) * self.m_a ** 2) *
+                          np.sqrt(-4. * self.mx ** 2 * self.m_a ** 2 + self.m_a ** 4)) /\
+                         (8. * (self.m_a ** 2) ** 1.5 * Pi)
+        if ferms:
+            for f in self.f:
+                mass_f = get_mass(f)
+                nc = color_number(f)
+                gfs = mass_f * np.sqrt(self.lam_f_s * (self.lam_chi_p + self.lam_chi_s) / self.c_ratio) * yuk
+                gfp = mass_f * np.sqrt(self.lam_f_p * (self.lam_chi_p + self.lam_chi_s) / self.c_ratio) * yuk
+                if up_like(f):
+                    gfs *= self.tbeta
+                    gfp *= self.tbeta
+                if 2. * mass_f < self.m_a:
+                    width += nc*((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
+                              np.sqrt(-4*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
         return width
 
 
@@ -172,7 +178,7 @@ class fermionic_dm_spin1_med_schannel(object):
     Lagrangian = [\bar{\chi} \gamma^\mu (\lamba_{\chi,v} + \lambda_{\chi,a} \gamma^5) \chi +
     \bar{f}\gamma^\mu (\lamba_{f,v} + \lambda_{f,a} \gamma^5) f]V_\mu
     """
-    def __init__(self, mx, dm_type, f, m_v, lam_chi_v, lam_chi_a, lam_f_v, lam_f_a, c_ratio=0.):
+    def __init__(self, mx, dm_type, f, m_v, lam_chi_v, lam_chi_a, lam_f_v, lam_f_a, c_ratio=0., tbeta=1.):
         self.mx = mx
         self.dm_type = dm_type
         self.m_v = m_v
@@ -182,9 +188,7 @@ class fermionic_dm_spin1_med_schannel(object):
         self.lam_f_a = lam_f_a
         self.f = f
         self.c_ratio = c_ratio
-        if self.dm_type == 'majorana':
-            self.lam_chi_v *= 2.
-            self.lam_chi_a *= 2.
+        self.tbeta = tbeta
 
     def sigma(self, s):
         sigma = 0.
@@ -209,10 +213,10 @@ class fermionic_dm_spin1_med_schannel(object):
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
-            sigma += self.sigma_v(ferm, v)
+            sigma += self.sigma_v(ferm, v, totferms=len(self.f))
         return sigma
 
-    def sigma_v(self, channel, v):
+    def sigma_v(self, channel, v, totferms=1.):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
         # This is for specific annihilation products, not general!
         nc = color_number(channel)
@@ -258,7 +262,7 @@ class fermionic_dm_spin1_med_schannel(object):
             gxa = np.sqrt(self.c_ratio * self.lam_chi_a * (self.lam_f_a + self.lam_f_v))
             gxv = np.sqrt(self.c_ratio * self.lam_chi_v * (self.lam_f_v + self.lam_f_a))
             
-            sv += (np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*(8*gxa**2*gxv**2*self.mx**4 +
+            sv += (1./totferms)*((np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*(8*gxa**2*gxv**2*self.mx**4 +
                                                                    gxa**4*self.mx**2*self.m_v**2 -
                                                                    14*gxa**2*gxv**2*self.mx**2*self.m_v**2 +
                                                                    gxv**4*self.mx**2*self.m_v**2 -
@@ -275,7 +279,7 @@ class fermionic_dm_spin1_med_schannel(object):
                                         53*gxv**4*self.mx**2*self.m_v**10 - 17*gxa**4*self.m_v**12 +
                                         6*gxa**2*gxv**2*self.m_v**12 - 17*gxv**4*self.m_v**12)*v**2)/\
                   (96.*self.mx**2*self.m_v**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*
-                   (2*self.mx**2 - self.m_v**2)**4*Pi)
+                   (2*self.mx**2 - self.m_v**2)**4*Pi))
 
         return sv
 
@@ -333,29 +337,32 @@ class fermionic_dm_spin1_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
+        if self.c_ratio == 0.:
+            self.c_ratio = 1.
         width = 0.
-        #gxa = np.sqrt(self.c_ratio * self.lam_chi_a * (self.lam_f_a + self.lam_f_v))
-        #gxv = np.sqrt(self.c_ratio * self.lam_chi_v * (self.lam_f_v + self.lam_f_a))
 
+        gxa = np.sqrt(self.c_ratio * self.lam_chi_a*(self.lam_f_a+self.lam_f_v))
+        gxv = np.sqrt(self.c_ratio * self.lam_chi_v*(self.lam_f_a+self.lam_f_v))
 
-        gxa = np.sqrt(self.lam_chi_a*(self.lam_f_a+self.lam_f_v))
-        gxv = np.sqrt(self.lam_chi_v*(self.lam_f_a+self.lam_f_v))
-
-        if 2.*self.mx < self.m_v:
-            width += ((2*(-2*gxa**2 + gxv**2)*self.mx**2 + (gxa**2 + gxv**2)*self.m_v**2)*
-                     np.sqrt(-4.*self.mx**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
-        for f in self.f:
-            mass_f = get_mass(f)
-            nc = color_number(f)
-            gfa = np.sqrt((self.lam_chi_a + self.lam_chi_v)*self.lam_f_a)
-            gfv = np.sqrt((self.lam_chi_a + self.lam_chi_v)*self.lam_f_v)
-            if 2.*mass_f < self.m_v:
-                width += nc*((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
-                          np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
+        if dm:
+            if 2.*self.mx < self.m_v:
+                width += ((2*(-2*gxa**2 + gxv**2)*self.mx**2 + (gxa**2 + gxv**2)*self.m_v**2)*
+                         np.sqrt(-4.*self.mx**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
+        if ferms:
+            for f in self.f:
+                mass_f = get_mass(f)
+                nc = color_number(f)
+                gfa = np.sqrt((self.lam_chi_a + self.lam_chi_v)*self.lam_f_a / self.c_ratio)
+                gfv = np.sqrt((self.lam_chi_a + self.lam_chi_v)*self.lam_f_v / self.c_ratio)
+                if up_like(f):
+                    gfa *= self.tbeta
+                    gfv *= self.tbeta
+                if 2.*mass_f < self.m_v:
+                    width += nc*((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
+                              np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
 
         return width
-
 
 
 class scalar_dm_spin0_med_schannel(object):
@@ -363,7 +370,7 @@ class scalar_dm_spin0_med_schannel(object):
     Lagrangian = [\lambda_phi |\phi|^2 + \bar{f} (\lamba_{f,s} + \lambda_{f,p} i \gamma^5) f] A
     """
 
-    def __init__(self, mx, dm_real, f, m_a, lam_phi, lam_f_s, lam_f_p, c_ratio=0.):
+    def __init__(self, mx, dm_real, f, m_a, lam_phi, lam_f_s, lam_f_p, c_ratio=0., tbeta=1.):
         self.mx = mx
         self.dm_real = dm_real
         self.m_a = m_a
@@ -372,8 +379,7 @@ class scalar_dm_spin0_med_schannel(object):
         self.lam_f_p = lam_f_p
         self.f = f
         self.c_ratio = c_ratio
-        if dm_real:
-            self.lam_p *= 2.
+        self.tbeta = tbeta
 
     def sigma(self, s):
         sigma = 0.
@@ -393,10 +399,10 @@ class scalar_dm_spin0_med_schannel(object):
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
-            sigma += self.sigma_v(ferm, v)
+            sigma += self.sigma_v(ferm, v, totferms=len(self.f))
         return sigma
 
-    def sigma_v(self, channel, v):
+    def sigma_v(self, channel, v, totferms=1.):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
         # This is for specific annihilation products, not general!
         sv = 0.
@@ -410,21 +416,23 @@ class scalar_dm_spin0_med_schannel(object):
             gfs = lam_f_s
             sv += nc * ((gx**2*np.sqrt(self.mx**2*(self.mx**2 - mass_f**2))*
                          (self.mx**2*gfp**2 + self.mx**2*gfs**2 - gfs**2*mass_f**2))/
-                        (16.*self.mx**2*np.sqrt(self.mx**4)*(4*self.mx**2 - self.m_a**2)**2*Pi) -
+                        (4.*self.mx**2*np.sqrt(self.mx**4)*(4*self.mx**2 - self.m_a**2)**2*Pi) -
                         (gx**2*(16*self.mx**6*gfp**2 + 16*self.mx**6*gfs**2 - 20*self.mx**4*gfp**2*mass_f**2 -
                                 44*self.mx**4*gfs**2*mass_f**2 + 28*self.mx**2*gfs**2*mass_f**4 +
                                 self.mx**2*gfp**2*mass_f**2*self.m_a**2 + 3*self.mx**2*gfs**2*mass_f**2*self.m_a**2 -
-                                3*gfs**2*mass_f**4*self.m_a**2)*v**2)/(128.*np.sqrt(self.mx**4)*
-                                                                       np.sqrt(self.mx**2*(self.mx**2 - mass_f**2))*
-                                                                       (4*self.mx**2 - self.m_a**2)**3*Pi))
+                                3*gfs**2*mass_f**4*self.m_a**2)*v**2)/
+                        (32.*np.sqrt(self.mx**4)*np.sqrt(self.mx**2*(self.mx**2 - mass_f**2))*
+                         (4*self.mx**2 - self.m_a**2)**3*Pi))
         if self.m_a < self.mx:
             gx = np.sqrt(self.c_ratio * (self.lam_f_s * self.lam_p + self.lam_p * self.lam_f_p))
 
-            sv += (gx**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2)))/\
-                  (256.*self.mx**2*np.sqrt(self.mx**4)*(2*self.mx**2 - self.m_a**2)**2*Pi) - \
-                  (gx**4*(56*self.mx**6 - 100*self.mx**4*self.m_a**2 + 50*self.mx**2*self.m_a**4 - 9*self.m_a**6)*v**2)/\
-                  (6144.*np.sqrt(self.mx**4)*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2))*
-                   (2*self.mx**2 - self.m_a**2)**4*Pi)
+            sv += (1./totferms)*((gx**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2)))/\
+                  (16.*self.mx**2*np.sqrt(self.mx**4)*
+                   (2*self.mx**2 - self.m_a**2)**2*Pi) - \
+                  (gx**4*(56*self.mx**6 - 100*self.mx**4*self.m_a**2 +
+                          50*self.mx**2*self.m_a**4 - 9*self.m_a**6)*v**2)/\
+                  (384.*np.sqrt(self.mx**4)*np.sqrt(self.mx**2*(self.mx**2 - self.m_a**2))*
+                   (2*self.mx**2 - self.m_a**2)**4*Pi))
 
         return sv
 
@@ -475,19 +483,26 @@ class scalar_dm_spin0_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
+        if self.c_ratio == 0.:
+            self.c_ratio = 1.
         width = 0.
-        gx = np.sqrt(self.lam_p * (self.lam_f_p + self.lam_f_s))
-        if 2. * self.mx < self.m_a:
-            width += (gx**2*np.sqrt(-4.*self.mx**2*self.m_a**2 + self.m_a**4))/(64.*(self.m_a**2)**1.5*Pi)
-        for f in self.f:
-            mass_f = get_mass(f)
-            nc = color_number(f)
-            gfs = mass_f * np.sqrt(self.lam_f_s * self.lam_p) * yuk
-            gfp = mass_f * np.sqrt(self.lam_f_p * self.lam_p) * yuk
-            if 2. * mass_f < self.m_a:
-                width += nc * ((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
-                          np.sqrt(-4.*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
+        gx = np.sqrt(self.c_ratio * self.lam_p * (self.lam_f_p + self.lam_f_s))
+        if dm:
+            if 2. * self.mx < self.m_a:
+                width += (gx**2*np.sqrt(-4*self.mx**2*self.m_a**2 + self.m_a**4))/(16.*(self.m_a**2)**1.5*Pi)
+        if ferms:
+            for f in self.f:
+                mass_f = get_mass(f)
+                nc = color_number(f)
+                gfs = mass_f * np.sqrt(self.lam_f_s * self.lam_p / self.c_ratio) * yuk
+                gfp = mass_f * np.sqrt(self.lam_f_p * self.lam_p / self.c_ratio) * yuk
+                if up_like(f):
+                    gfs *= self.tbeta
+                    gfp *= self.tbeta
+                if 2. * mass_f < self.m_a:
+                    width += nc * (((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
+                                    np.sqrt(-4*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi))
         return width
 
 
@@ -496,7 +511,7 @@ class scalar_dm_spin1_med_schannel(object):
     Lagrangian = [i \lambda_p \phi^\dag \dderiv_\mu \phi +
     \bar{f}\gamma^\mu (\lamba_{f,v} + \lambda_{f,a} \gamma^5) f]V_\mu
     """
-    def __init__(self, mx, dm_real, f, m_v, lam_p, lam_f_v, lam_f_a, c_ratio=0.):
+    def __init__(self, mx, dm_real, f, m_v, lam_p, lam_f_v, lam_f_a, c_ratio=0., tbeta=1.):
         self.mx = mx
         self.dm_real = dm_real
         self.m_v = m_v
@@ -505,6 +520,7 @@ class scalar_dm_spin1_med_schannel(object):
         self.lam_f_a = lam_f_a
         self.f = f
         self.c_ratio = c_ratio
+        self.tbeta = tbeta
         if self.dm_real:
             self.lam_p = 0.
             self.lam_f_v = 0.
@@ -526,10 +542,10 @@ class scalar_dm_spin1_med_schannel(object):
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
-            sigma += self.sigma_v(ferm, v)
+            sigma += self.sigma_v(ferm, v, totferms=len(self.f))
         return sigma
 
-    def sigma_v(self, channel, v):
+    def sigma_v(self, channel, v, totferms=1.):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
         # This is for specific annihilation products, not general!
         sv = 0.
@@ -546,14 +562,14 @@ class scalar_dm_spin1_med_schannel(object):
         if self.m_v < self.mx:
             gx = np.sqrt(self.c_ratio * (self.lam_f_v * self.lam_p + self.lam_p * self.lam_f_a))
             
-            sv += (gx**4*(self.mx**10*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2)) -
+            sv += (1./totferms)*((gx**4*(self.mx**10*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2)) -
                           2*self.mx**8*self.m_v**2*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2)) +
                           self.mx**6*self.m_v**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))))/\
                   ((self.mx**4)**1.5*self.m_v**4*(2*self.mx**2 - self.m_v**2)**2*Pi) + \
                   (np.sqrt(self.mx**4)*gx**4*(24*self.mx**10 - 60*self.mx**8*self.m_v**2 +
                                               58*self.mx**6*self.m_v**4 - 35*self.mx**4*self.m_v**6 +
                                               16*self.mx**2*self.m_v**8 - 3*self.m_v**10)*v**2)/\
-                  (24.*self.m_v**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*(2*self.mx**2 - self.m_v**2)**4*Pi)
+                  (24.*self.m_v**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*(2*self.mx**2 - self.m_v**2)**4*Pi))
             
         return sv
 
@@ -604,20 +620,27 @@ class scalar_dm_spin1_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
+        if self.c_ratio == 0.:
+            self.c_ratio = 1.
         width = 0.
-        gx = np.sqrt(self.lam_p * (self.lam_f_v + self.lam_f_a))
-        if 2. * self.mx < self.m_v:
-            width += (gx**2*(-4*self.mx**2 + self.m_v**2)*
-                     np.sqrt(-4.*self.mx**2*self.m_v**2 + self.m_v**4))/(48.*(self.m_v**2)**1.5*Pi)
-        for f in self.f:
-            mass_f = get_mass(f)
-            nc = color_number(f)
-            gfa = np.sqrt(self.lam_f_a * self.lam_p)
-            gfv = np.sqrt(self.lam_f_v * self.lam_p)
-            if 2. * mass_f < self.m_v:
-                width += nc * ((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
-                               np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
+        gx = np.sqrt(self.c_ratio * self.lam_p * (self.lam_f_v + self.lam_f_a))
+        if dm:
+            if 2. * self.mx < self.m_v:
+                width += (gx**2*(-4*self.mx**2 + self.m_v**2)*
+                         np.sqrt(-4.*self.mx**2*self.m_v**2 + self.m_v**4))/(48.*(self.m_v**2)**1.5*Pi)
+        if ferms:
+            for f in self.f:
+                mass_f = get_mass(f)
+                nc = color_number(f)
+                gfa = np.sqrt(self.lam_f_a * self.lam_p / self.c_ratio)
+                gfv = np.sqrt(self.lam_f_v * self.lam_p / self.c_ratio)
+                if up_like(f):
+                    gfv *= self.tbeta
+                    gfa *= self.tbeta
+                if 2. * mass_f < self.m_v:
+                    width += nc * ((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
+                                   np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
         return width
 
 
@@ -626,7 +649,7 @@ class vector_dm_spin0_med_schannel(object):
     Lagrangian = [\lamba_x X^\mu X_\mu^\dag +
     \bar{f} (\lamba_{f,s} + \lambda_{f,p} i \gamma^5) f] A
     """
-    def __init__(self, mx, dm_real, f, m_a, lam_x, lam_f_s, lam_f_p, c_ratio=0.):
+    def __init__(self, mx, dm_real, f, m_a, lam_x, lam_f_s, lam_f_p, c_ratio=0., tbeta=1.):
         self.mx = mx
         self.dm_real = dm_real
         self.m_a = m_a
@@ -635,9 +658,7 @@ class vector_dm_spin0_med_schannel(object):
         self.lam_f_p = lam_f_p
         self.f = f
         self.c_ratio = c_ratio
-        if self.dm_real:
-            self.lam_x *= 2.
-
+        self.tbeta = tbeta
 
     def sigma(self, s):
         sigma = 0.
@@ -657,10 +678,10 @@ class vector_dm_spin0_med_schannel(object):
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
-            sigma += self.sigma_v(ferm, v)
+            sigma += self.sigma_v(ferm, v, totferms=len(self.f))
         return sigma
 
-    def sigma_v(self, channel, v):
+    def sigma_v(self, channel, v, totferms=1.):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
         # This is for specific annihilation products, not general!
         sv = 0.
@@ -686,13 +707,13 @@ class vector_dm_spin0_med_schannel(object):
         if self.m_a < self.mx:
             gx = np.sqrt(self.c_ratio * (self.lam_f_s * self.lam_x + self.lam_x * self.lam_f_p))
 
-            sv += (np.sqrt(self.mx**4)*gx**4*np.sqrt(self.mx**2*(self.mx**2 - 1.*self.m_a**2))*
+            sv += (1./totferms)*((np.sqrt(self.mx**4)*gx**4*np.sqrt(self.mx**2*(self.mx**2 - 1.*self.m_a**2))*
                    (6*self.mx**4 - 4*self.mx**2*self.m_a**2 + self.m_a**4))/\
                   (9.*self.mx**10*(2*self.mx**2 - self.m_a**2)**2*Pi) - \
                   (gx**4*(80*self.mx**10 - 232*self.mx**8*self.m_a**2 + 260*self.mx**6*self.m_a**4 -
                           158*self.mx**4*self.m_a**6 + 46*self.mx**2*self.m_a**8 - 5*self.m_a**10)*v**2)/\
                   (216.*(self.mx**4)**1.5*np.sqrt(self.mx**2*(self.mx**2 - 1.*self.m_a**2))*
-                   (2*self.mx**2 - self.m_a**2)**4*Pi)
+                   (2*self.mx**2 - self.m_a**2)**4*Pi))
         
         return sv
 
@@ -744,22 +765,28 @@ class vector_dm_spin0_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
+        if self.c_ratio == 0.:
+            self.c_ratio = 1.
         width = 0.
-
-        gx = np.sqrt(self.lam_x * (self.lam_f_s + self.lam_f_p))
-        if 2. * self.mx < self.m_a:
-            width += (gx**2*np.sqrt(-4.*self.mx**2*self.m_a**2 + self.m_a**4)*
-                     (12*self.mx**4 - 4*self.mx**2*self.m_a**2 + self.m_a**4))/\
-                     (64.*self.mx**4*(self.m_a**2)**1.5*Pi)
-        for f in self.f:
-            mass_f = get_mass(f)
-            nc = color_number(f)
-            gfs = mass_f * np.sqrt(self.lam_f_s * self.lam_x) * yuk
-            gfp = mass_f * np.sqrt(self.lam_f_p * self.lam_x) * yuk
-            if 2. * mass_f < self.m_a:
-                width += nc * ((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
-                               np.sqrt(-4.*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
+        gx = np.sqrt(self.c_ratio * self.lam_x * (self.lam_f_s + self.lam_f_p))
+        if dm:
+            if 2. * self.mx < self.m_a:
+                width += (gx**2*np.sqrt(-4.*self.mx**2*self.m_a**2 + self.m_a**4)*
+                         (12*self.mx**4 - 4*self.mx**2*self.m_a**2 + self.m_a**4))/\
+                         (64.*self.mx**4*(self.m_a**2)**1.5*Pi)
+        if ferms:
+            for f in self.f:
+                mass_f = get_mass(f)
+                nc = color_number(f)
+                gfs = mass_f * np.sqrt(self.lam_f_s * self.lam_x / self.c_ratio) * yuk
+                gfp = mass_f * np.sqrt(self.lam_f_p * self.lam_x / self.c_ratio) * yuk
+                if up_like(f):
+                    gfs *= self.tbeta
+                    gfp *= self.tbeta
+                if 2. * mass_f < self.m_a:
+                    width += nc * ((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
+                                   np.sqrt(-4.*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
         return width
 
 class vector_dm_spin1_med_schannel(object):
@@ -767,7 +794,7 @@ class vector_dm_spin1_med_schannel(object):
     Lagrangian = [\lamba_x (X^{\nu,\dag} \del_\nu X^\mu + h.c. ) +
     \bar{f} (\lamba_{f,s} + \lambda_{f,p} i \gamma^5) f] V_\mu
     """
-    def __init__(self, mx, dm_real, f, m_v, lam_x, lam_f_v, lam_f_a, c_ratio=0.):
+    def __init__(self, mx, dm_real, f, m_v, lam_x, lam_f_v, lam_f_a, c_ratio=0., tbeta=1.):
         self.mx = mx
         self.dm_real = dm_real
         self.m_v = m_v
@@ -776,8 +803,7 @@ class vector_dm_spin1_med_schannel(object):
         self.lam_f_a = lam_f_a
         self.f = f
         self.c_ratio = c_ratio
-        if self.dm_real:
-            self.lam_x *= 2.
+        self.tbeta = tbeta
 
     def sigma(self, s):
         sigma = 0.
@@ -800,10 +826,10 @@ class vector_dm_spin1_med_schannel(object):
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
-            sigma += self.sigma_v(ferm, v)
+            sigma += self.sigma_v(ferm, v, totferms=len(self.f))
         return sigma
 
-    def sigma_v(self, channel, v):
+    def sigma_v(self, channel, v, totferms=1.):
         # Non-realtivsitic expansion to power v^2 -- NOTE: not thermally averaged!
         # This is for specific annihilation products, not general!
         sv = 0.
@@ -816,14 +842,14 @@ class vector_dm_spin1_med_schannel(object):
             gfa = lam_f_a
             gfv = lam_f_v
             
-            sv += nc * ((4*gx**2*np.sqrt(self.mx**2*(self.mx**2 - mass_f**2))*
+            sv += nc*((4*gx**2*np.sqrt(self.mx**2*(self.mx**2 - mass_f**2))*
                    (2*self.mx**2*gfa**2 + 2*self.mx**2*gfv**2 - 2*gfa**2*mass_f**2 + gfv**2*mass_f**2)*v**2)/\
                   (27.*np.sqrt(self.mx**4)*(4*self.mx**2 - self.m_v**2)**2*Pi))
 
         if self.m_v < self.mx:
             gx = np.sqrt(self.c_ratio * (self.lam_f_v * self.lam_x + self.lam_x * self.lam_f_a))
 
-            sv +=(np.sqrt(self.mx**4)*gx**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*
+            sv += (1./totferms)*((np.sqrt(self.mx**4)*gx**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*
                   (18*self.mx**8 - 38*self.mx**6*self.m_v**2 + 35*self.mx**4*self.m_v**4 -
                    15*self.mx**2*self.m_v**6 + 3*self.m_v**8))/\
                  (72.*self.mx**6*self.m_v**4*(2*self.mx**2 - self.m_v**2)**2*Pi) + \
@@ -831,7 +857,7 @@ class vector_dm_spin1_med_schannel(object):
                          818*self.mx**8*self.m_v**6 - 52*self.mx**6*self.m_v**8 + 211*self.mx**4*self.m_v**10 -
                          77*self.mx**2*self.m_v**12 + 9*self.m_v**14)*v**2)/\
                  (1728.*np.sqrt(self.mx**4)*self.m_v**4*np.sqrt(self.mx**2*(self.mx**2 - self.m_v**2))*
-                  (2*self.mx**2 - self.m_v**2)**4*Pi)
+                  (2*self.mx**2 - self.m_v**2)**4*Pi))
 
         return sv
 
@@ -883,20 +909,27 @@ class vector_dm_spin1_med_schannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
+        if self.c_ratio == 0.:
+            self.c_ratio = 1.
         width = 0.
-        gx = np.sqrt(self.lam_x * (self.lam_f_a + self.lam_f_v))
-        if 2. * self.mx < self.m_v:
-            width += (gx**2*(-4*self.mx**2 + self.m_v**2)*np.sqrt(-4.*self.mx**2*self.m_v**2 + self.m_v**4))/\
-                     (48.*self.mx**2*np.sqrt(self.m_v**2)*Pi)
-        for f in self.f:
-            mass_f = get_mass(f)
-            nc = color_number(f)
-            gfa = np.sqrt(self.lam_f_a * self.lam_x)
-            gfv = np.sqrt(self.lam_f_v * self.lam_x)
-            if 2. * mass_f < self.m_v:
-                width += nc * ((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
-                               np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(3.*(self.m_v**2)**1.5*Pi)
+        gx = np.sqrt(self.c_ratio * self.lam_x * (self.lam_f_a + self.lam_f_v))
+        if dm:
+            if 2. * self.mx < self.m_v:
+                width += (gx**2*(-4*self.mx**2 + self.m_v**2)*np.sqrt(-4.*self.mx**2*self.m_v**2 + self.m_v**4))/\
+                         (48.*self.mx**2*np.sqrt(self.m_v**2)*Pi)
+        if ferms:
+            for f in self.f:
+                mass_f = get_mass(f)
+                nc = color_number(f)
+                gfa = np.sqrt(self.lam_f_a * self.lam_x / self.c_ratio)
+                gfv = np.sqrt(self.lam_f_v * self.lam_x / self.c_ratio)
+                if up_like(f):
+                    gfa *= self.tbeta
+                    gfv *= self.tbeta
+                if 2. * mass_f < self.m_v:
+                    width += nc * ((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
+                                   np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(3.*(self.m_v**2)**1.5*Pi)
         return width
 
 
@@ -933,23 +966,19 @@ class dirac_fermionic_dm_spin0_med_tchannel(object):
         sv = 0.
         nc = color_number(channel)
         mass_f = get_mass(channel)
-        lam_s = self.lam_s
-        lam_p = self.lam_p
-        gDM = np.mean([lam_s, lam_p])
+
+        gDM = self.lam_s
         if self.mx > mass_f:
-            sv += ((3*gDM**4*np.sqrt(self.mx**4)*np.sqrt(self.mx**2*(-mass_f**2 + self.mx**2)))/\
-                  (2.*self.mx**2*(-mass_f**2 + self.mx**2 +
-                                  self.m_a**2)**2*Pi) - (gDM**4*np.sqrt(self.mx**4)*
-                                                         (-2*mass_f**8 - 5*mass_f**6*self.mx**2 +
-                                                          24*mass_f**4*self.mx**4 - 25*mass_f**2*self.mx**6 +
-                                                          8*self.mx**8 + 4*mass_f**6*self.m_a**2 -
-                                                          2*mass_f**4*self.mx**2*self.m_a**2 -
-                                                          26*mass_f**2*self.mx**4*self.m_a**2 +
-                                                          24*self.mx**6*self.m_a**2 - 2*mass_f**4*self.m_a**4 +
-                                                          7*mass_f**2*self.mx**2*self.m_a**4 -
-                                                          8*self.mx**4*self.m_a**4)*v**2)/\
-                                                        (16.*self.mx**2*np.sqrt(self.mx**2*(-mass_f**2 + self.mx**2))*
-                                                         (-mass_f**2 + self.mx**2 + self.m_a**2)**4*Pi)) / 16.
+            sv += (3*gDM**4*np.sqrt(self.mx**4)*np.sqrt(self.mx**2*(-mass_f**2 + self.mx**2)))/\
+                  (32.*self.mx**2*(-mass_f**2 + self.mx**2 + self.m_a**2)**2*Pi) - \
+                  (gDM**4*np.sqrt(self.mx**4)*(-2*mass_f**8 - 5*mass_f**6*self.mx**2 + 24*mass_f**4*self.mx**4 -
+                                               25*mass_f**2*self.mx**6 + 8*self.mx**8 + 4*mass_f**6*self.m_a**2 -
+                                               2*mass_f**4*self.mx**2*self.m_a**2 -
+                                               26*mass_f**2*self.mx**4*self.m_a**2 + 24*self.mx**6*self.m_a**2 -
+                                               2*mass_f**4*self.m_a**4 + 7*mass_f**2*self.mx**2*self.m_a**4 -
+                                               8*self.mx**4*self.m_a**4)*v**2)/\
+                  (256.*self.mx**2*np.sqrt(self.mx**2*(-mass_f**2 + self.mx**2))*
+                   (-mass_f**2 + self.mx**2 + self.m_a**2)**4*Pi)
         
         return sv
     
@@ -1003,9 +1032,9 @@ class dirac_fermionic_dm_spin0_med_tchannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
         width = 0.
-        gDM = np.sqrt(self.lam_p*self.lam_s)
+        gDM = self.lam_s
         for f in self.f:
             mass_f = get_mass(f)
             width += -(gDM**2*np.sqrt((mass_f - self.mx - self.m_a)*
@@ -1117,7 +1146,7 @@ class dirac_fermionic_dm_spin1_med_tchannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
         width = 0.
         gDM = np.sqrt(self.lam_v * self.lam_a)
         for f in self.f:
@@ -1227,7 +1256,7 @@ class complex_vector_dm_spin_half_med_tchannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
         width = 0.
         for f in self.f:
             mass_f = get_mass(f)
@@ -1335,7 +1364,7 @@ class real_vector_dm_spin_half_med_tchannel(object):
         o_h = 1.07 * 10 ** 9. / (m_planck * jterm[0] * np.sqrt(gstar))
         return o_h
 
-    def mediator_width(self):
+    def mediator_width(self, ferms=True, dm=True):
         width = 0.
         for f in self.f:
             mass_f = get_mass(f)

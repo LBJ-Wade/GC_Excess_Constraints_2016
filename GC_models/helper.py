@@ -58,6 +58,13 @@ def get_mass(particle):
     return mass_table[particle_table.index(particle)]
 
 
+def up_like(particle):
+    if particle in ['u','c','t','nu_e','nu_mu','nu_tau']:
+        return True
+    else:
+        return False
+
+
 def nuclide_properties(nuc):
     if nuc == 'Xe':
         return [[54., 54., 54.], [129., 131., 132.],

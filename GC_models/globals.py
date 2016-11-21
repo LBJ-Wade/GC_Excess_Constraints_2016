@@ -12,30 +12,30 @@ except KeyError:
 
 
 def build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
-                   f, m_a, dm_lambdas, lam_f, crat):
+                   f, m_a, dm_lambdas, lam_f, crat, tbeta=1.):
 
     if channel == 's':
         if dm_spin == 'fermion' and mediator == 's':
             return fermionic_dm_spin0_med_schannel(dm_mass, dm_type, f, m_a,
                                                    dm_lambdas[0], dm_lambdas[1],
-                                                   lam_f[0], lam_f[1], crat)
+                                                   lam_f[0], lam_f[1], crat, tbeta)
         if dm_spin == 'fermion' and mediator == 'v':
             return fermionic_dm_spin1_med_schannel(dm_mass, dm_type, f, m_a,
                                                    dm_lambdas[0], dm_lambdas[1],
-                                                   lam_f[0], lam_f[1], crat)
+                                                   lam_f[0], lam_f[1], crat, tbeta)
         if dm_spin == 'scalar' and mediator == 's':
             return scalar_dm_spin0_med_schannel(dm_mass, dm_real, f, m_a,
-                                                dm_lambdas, lam_f[0], lam_f[1], crat)
+                                                dm_lambdas, lam_f[0], lam_f[1], crat, tbeta)
         if dm_spin == 'scalar' and mediator == 'v':
             return scalar_dm_spin1_med_schannel(dm_mass, dm_real, f, m_a,
-                                                dm_lambdas, lam_f[0], lam_f[1], crat)
+                                                dm_lambdas, lam_f[0], lam_f[1], crat, tbeta)
         if dm_spin == 'vector' and mediator == 's':
             return vector_dm_spin0_med_schannel(dm_mass, dm_real, f, m_a,
-                                                dm_lambdas, lam_f[0], lam_f[1], crat)
+                                                dm_lambdas, lam_f[0], lam_f[1], crat, tbeta)
 
         if dm_spin == 'vector' and mediator == 'v':
             return vector_dm_spin1_med_schannel(dm_mass, dm_real, f, m_a,
-                                                dm_lambdas, lam_f[0], lam_f[1], crat)
+                                                dm_lambdas, lam_f[0], lam_f[1], crat, tbeta)
     elif channel == 't':
         if dm_spin == 'fermion' and mediator == 's' and dm_type == 'dirac':
             return dirac_fermionic_dm_spin0_med_tchannel(dm_mass, f, m_a, dm_lambdas, dm_lambdas)
@@ -97,7 +97,7 @@ def plot_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
         else:
             real_tag = 'Complex'
         spin_tag = real_tag + '_' + dm_spin
-    mass_tag = '_Mass_{:.2f}_GeV_'.format(dm_mass)
+    mass_tag = '_Mass_{:.0f}_GeV_'.format(dm_mass)
 
     if mediator == 's':
         med_tag = '_Scalar_Mediator_'
@@ -130,7 +130,6 @@ def plot_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
     return full_tag
 
 
-
 def file_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
                channel, ferm_bilinear, extra_tag=''):
     if dm_spin == 'fermion':
@@ -141,7 +140,7 @@ def file_namer(dm_spin, dm_real, dm_type, dm_mass, mediator, dm_bilinear,
         else:
             real_tag = 'Complex'
         spin_tag = real_tag + '_' + dm_spin
-    mass_tag = '_Mass_{:.2f}_GeV_'.format(dm_mass)
+    mass_tag = '_Mass_{:.0f}_GeV_'.format(dm_mass)
 
     if mediator == 's':
         med_tag = '_Scalar_Mediator_'
@@ -235,9 +234,9 @@ def plot_labeler(dm_spin, dm_real, dm_type, dm_bilinear, channel, ferm_bilinear,
             med = r'$\bar{{\psi}}$'
 
         if dm_spin == 'fermion':
-            tag = dm1 + dm_bi + r'$P_R$' + f1 + med
+            tag = dm1 + dm_bi + r'$\frac{1}{2}(1 \pm \gamma^5)$' + f1 + med
         else:
-            tag = med + dm_bi + r'$P_R$' + f1 + dm1
+            tag = med + dm_bi + r'$\frac{1}{2}(1 \pm \gamma^5)$' + f1 + dm1
     return tag, mtag
 
 

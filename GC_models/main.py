@@ -41,8 +41,8 @@ except KeyError:
 # Interaction Information
 dm_spin = ['vector']  # scalar, fermion, vector
 dm_real = [T]
-dm_type = ['dirac']  # dirac, majorana
-dm_mass = [35.]   # We're using 35 GeV to annihilation to all fermions, 50 GeV if just to bb
+dm_type = ['majorana']  # dirac, majorana
+dm_mass = [50.]   # We're using 35 GeV to annihilation to all fermions, 50 GeV if just to bb
 mediator = ['s']  # s = scalar, v = vector, f = fermion
 dm_bilinear = ['s']  # v=vector, av=axialvector, s=scalar, ps=pseudoscalar
 ferm_bilinear = ['ps']
@@ -50,15 +50,19 @@ channel = ['s']  # s or t
 
 # What would you like to Calculate
 direct = [F]  # Calculate direct detection bounds
-lhc = [F]  # Calculate LHC bounds
+lhc = [T]  # Calculate LHC bounds
+nwa_calc = T  # Calculate the NWA
+nwa_tbeta = T  # Calc NWA with tan(\beta) != 1.
+tbeta = 0.5  # Value of tan(\beta) \equiv \lambda_up / \lambda_down
 thermal_coups = T  # Calculate thermal couplings
 csec_plots = T  # Make cross section plots
+b_ratios = T  # Make plots of branching ratios
 
 
 candidates = len(dm_spin)
 for i in range(candidates):
 
-    if dm_mass[i] == 35. and channel[i] == 's':
+    if dm_mass[i] == 35. or (channel[i]=='s' and mediator[i] == 's'):
         #ferms = ['b', 'c', 'u', 'd', 't', 's']
         ferms = ['b', 'c', 'u', 'd', 't', 's', 'e', 'mu', 'tau', 'nu_e', 'nu_mu', 'nu_tau']
     else:
@@ -164,11 +168,20 @@ for i in range(candidates):
         print 'Calculating LHC bounds...'
         if channel[i] == 's':
             if dm_spin[i] == 'scalar':
-                    ptag = 'scalar'
+                if dm_real[i]:
+                    ptag = 'r_scalar'
+                else:
+                    ptag = 'c_scalar'
             elif dm_spin[i] == 'fermion':
-                    ptag = 'fermion'
+                if dm_type[i] == 'dirac':
+                    ptag = 'd_fermion'
+                else:
+                    ptag = 'm_fermion'
             else:
-                    ptag = 'vector'
+                if dm_real[i]:
+                    ptag = 'r_vector'
+                else:
+                    ptag = 'c_vector'
 
             files = glob.glob(MAIN_PATH + '/Input_Data/LHC_{:.0f}GeV_'.format(dm_mass[i]) + ptag +\
                               '_' + dm_bilinear[i] + '_' +\
@@ -180,7 +193,9 @@ for i in range(candidates):
                 load = np.loadtxt(f)
                 load = load[np.argsort(load[:, 0])]
                 med = np.logspace(np.log10(np.min(load[:, 0])), np.log10(np.max(load[:, 0])), 100)
-                plt_bnds = interpola(med, load[:, 0], load[:, 1])
+                #  plt_bnds = np.power(10, interpola(np.log10(med), np.log10(load[:, 0]), np.log10(load[:, 1])))
+                #  plt_bnds = interpola(med, load[:, 0], load[:, 1])
+                plt_bnds = np.power(10, interp1d(np.log10(load[:, 0]), np.log10(load[:, 1]))(np.log10(med)))
                 if 'dtype' in f:
                     linesty = '--'
                 else:
@@ -213,32 +228,89 @@ for i in range(candidates):
                          rotation=90, ha='right', va='center')
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ WIDTH CALCULATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    print 'Calculating NWA...'
-    mass_med = np.logspace(0., np.log10(2. * 10 ** 3.), 100)
+    if nwa_calc:
+        print 'Calculating NWA...'
+        nwa_name1 = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                               dm_bilinear[i], channel[i], ferm_bilinear[i], extra_tag='NWA_1')
+        nwa_name5 = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                               dm_bilinear[i], channel[i], ferm_bilinear[i], extra_tag='NWA_5')
 
-    width_cups = np.zeros_like(mass_med)
-    max_cups = np.zeros_like(mass_med)
-    for j, m_a in enumerate(mass_med):
+        nwa_name13 = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                               dm_bilinear[i], channel[i], ferm_bilinear[i], extra_tag='NWA_gr_13')
+        nwa_name3 = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                               dm_bilinear[i], channel[i], ferm_bilinear[i], extra_tag='NWA_gr_3')
 
-        solve_wid = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
-                                                 dm_mass[i], mediator[i], ferms, m_a,
-                                                 fm_couplings, dm_couplings, 0.1), disp=False)
+        nwa_tbeta13 = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                               dm_bilinear[i], channel[i], ferm_bilinear[i],
+                                 extra_tag='NWA_tanb_{:.0f}_gr_13'.format(100*tbeta))
+        nwa_tbeta3 = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                                 dm_bilinear[i], channel[i], ferm_bilinear[i],
+                                 extra_tag='NWA_tanb_{:.0f}_gr_3'.format(100*tbeta))
 
-        width_cups[j] = np.power(10., 2. * solve_wid)
+        if channel[i] == 's':
+            mass_med = np.logspace(0., np.log10(2. * 10 ** 3.), 100)
+        else:
+            mass_med = np.logspace(2., np.log10(2. * 10 ** 3.), 100)
 
-        solve_wid2 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
-                                                   dm_mass[i], mediator[i], ferms, m_a,
-                                                   fm_couplings, dm_couplings, 0.5), disp=False)
-        max_cups[j] = np.power(10., 2. * solve_wid2)
+        width_cups = np.zeros_like(mass_med)
+        max_cups = np.zeros_like(mass_med)
 
-    print 'Width Calculation:'
+        wid_cup_13 = np.zeros_like(mass_med)
+        wid_cup_3 = np.zeros_like(mass_med)
 
-    plt.plot(mass_med, width_cups, '-.', lw=2, color='purple')
-    plt.text(mass_med[10], width_cups[10], r'$\Gamma / m_\psi = 0.1$', fontsize=14, ha='left',
-             va='bottom', color='purple', rotation=0)
-    plt.plot(mass_med, max_cups, lw=2, color='purple')
-    plt.text(mass_med[10], max_cups[10], r'$\Gamma / m_\psi = 0.5$', fontsize=14, ha='left',
-             va='bottom', color='purple')
+        wid_cup_tbeta_13 = np.zeros_like(mass_med)
+        wid_cup_tbeta_3 = np.zeros_like(mass_med)
+
+        for j, m_a in enumerate(mass_med):
+
+            solve_wid = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                     dm_mass[i], mediator[i], ferms, m_a,
+                                                     fm_couplings, dm_couplings, 0.1), disp=False)
+
+            width_cups[j] = np.power(10., 2. * solve_wid)
+
+            solve_wid2 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                       dm_mass[i], mediator[i], ferms, m_a,
+                                                       fm_couplings, dm_couplings, 0.5), disp=False)
+
+            max_cups[j] = np.power(10., 2. * solve_wid2)
+
+            solve_wid13 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                     dm_mass[i], mediator[i], ferms, m_a,
+                                                     fm_couplings, dm_couplings, 0.1, 1./3.), disp=False)
+
+            wid_cup_13[j] = np.power(10., 2. * solve_wid13)
+            solve_wid3 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                     dm_mass[i], mediator[i], ferms, m_a,
+                                                     fm_couplings, dm_couplings, 0.1, 3.), disp=False)
+
+            wid_cup_3[j] = np.power(10., 2. * solve_wid3)
+
+            solve_wid_tb_13 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                       dm_mass[i], mediator[i], ferms, m_a,
+                                                       fm_couplings, dm_couplings, 0.1, 1./3., tbeta), disp=False)
+
+            wid_cup_tbeta_13[j] = np.power(10., 2. * solve_wid_tb_13)
+            solve_wid_tb_3 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                                      dm_mass[i], mediator[i], ferms, m_a,
+                                                      fm_couplings, dm_couplings, 0.1, 3., tbeta), disp=False)
+
+            wid_cup_tbeta_3[j] = np.power(10., 2. * solve_wid_tb_3)
+
+        np.savetxt(nwa_name1, np.column_stack((mass_med, width_cups)))
+        np.savetxt(nwa_name5, np.column_stack((mass_med, max_cups)))
+        np.savetxt(nwa_name13, np.column_stack((mass_med, wid_cup_13)))
+        np.savetxt(nwa_name3, np.column_stack((mass_med, wid_cup_3)))
+
+        np.savetxt(nwa_tbeta13, np.column_stack((mass_med, wid_cup_tbeta_13)))
+        np.savetxt(nwa_tbeta3, np.column_stack((mass_med, wid_cup_tbeta_3)))
+
+        plt.plot(mass_med, width_cups, '-.', lw=2, color='purple')
+        plt.text(mass_med[10], width_cups[10], r'$\Gamma / m_\psi = 0.1$', fontsize=14, ha='left',
+                 va='bottom', color='purple', rotation=0)
+        plt.plot(mass_med, max_cups, lw=2, color='purple')
+        plt.text(mass_med[10], max_cups[10], r'$\Gamma / m_\psi = 0.5$', fontsize=14, ha='left',
+                 va='bottom', color='purple')
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ THERMAL COUPLINGS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if thermal_coups:
@@ -305,11 +377,12 @@ for i in range(candidates):
                 solve_c = fmin(t_coupling_omega, guess_pt, args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
                                                             dm_mass[i], mediator[i], ferms, m_a,
                                                             fm_couplings, dm_couplings, 0.), disp=False)
-                t_cups[j] = np.power(10., solve_c)
+                if channel[i] == 's':
+                    t_cups[j] = np.power(10., solve_c)
+                else:
+                    t_cups[j] = np.power(10., 2. * solve_c)
 
                 if channel[i] == 's':
-                    #t_cups[j] = np.power(10., solve_c)
-
                     solve_c1 = fmin(t_coupling_omega, guess_pt, args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
                                                                dm_mass[i], mediator[i], ferms, m_a,
                                                                fm_couplings, dm_couplings, 1.), disp=False)
@@ -371,10 +444,16 @@ for i in range(candidates):
     inter_label, mlab = plot_labeler(dm_spin[i], dm_real[i], dm_type[i], dm_bilinear[i], channel[i],
                                      ferm_bilinear[i], mediator[i])
     if channel[i] == 's':
-        plt.text(750, 5. * 10 ** -6, inter_label, verticalalignment='bottom',
-                 horizontalalignment='right', fontsize=16)
-        plt.text(750, 1.5 * 10 ** -6, mlab + ' = {:.0f} GeV'.format(dm_mass[i]), verticalalignment='bottom',
-                 horizontalalignment='right', fontsize=16)
+        if dm_spin[i] == 'fermion':
+            plt.text(750, 5. * 10 ** -6, inter_label, verticalalignment='bottom',
+                     horizontalalignment='right', fontsize=16)
+            plt.text(750, 1.5 * 10 ** -6, mlab + ' = {:.0f} GeV'.format(dm_mass[i]), verticalalignment='bottom',
+                     horizontalalignment='right', fontsize=16)
+        else:
+            plt.text(750, 1. * 10 ** -1., inter_label, verticalalignment='bottom',
+                     horizontalalignment='right', fontsize=16)
+            plt.text(750, 4. * 10 ** -2., mlab + ' = {:.0f} GeV'.format(dm_mass[i]), verticalalignment='bottom',
+                     horizontalalignment='right', fontsize=16)
     else:
         plt.text(1500, 3. * 10 ** -2, inter_label, verticalalignment='bottom',
                  horizontalalignment='right', fontsize=16)
@@ -382,7 +461,6 @@ for i in range(candidates):
                  horizontalalignment='right', fontsize=16)
     fig.set_tight_layout(True)
     pl.savefig(fig_name)
-
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ CROSS SECTION PLOTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -392,9 +470,14 @@ for i in range(candidates):
         # cross10 = np.zeros_like(plt_therm)
         # cross100 = np.zeros_like(plt_therm)
         for j, cup in enumerate(plt_therm):
-            cross[j] = cross_section_calc(cup, channel[i], dm_spin[i], dm_real[i], dm_type[i],
+            if channel[i] == 's':
+                cpass = cup
+            else:
+                cpass = np.sqrt(cup)
+            cross[j] = cross_section_calc(cpass, channel[i], dm_spin[i], dm_real[i], dm_type[i],
                                           dm_mass[i], mediator[i], ferms, med_full[j],
                                           fm_couplings, dm_couplings, 0.)
+
             # cross1[j] = cross_section_calc(cup, channel[i], dm_spin[i], dm_real[i], dm_type[i],
             #                                dm_mass[i], mediator[i], ferms, med_full[j],
             #                                fm_couplings, dm_couplings, 1.)
@@ -468,6 +551,62 @@ for i in range(candidates):
         #              horizontalalignment='right', fontsize=16)
         #     plt.text(1500, 3 * 10 ** -26, mlab + ' = {:.0f} GeV'.format(dm_mass[i]), verticalalignment='bottom',
         #              horizontalalignment='right', fontsize=16)
+
+        fig.set_tight_layout(True)
+        pl.savefig(fig_name)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ BRANCHING RATIO PLOTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    if b_ratios and mediator[i] == 's' and channel[i] == 's':
+        ferms = ['dark','b', 'c', 'u', 'd', 't', 's', 'e', 'mu', 'tau']
+        ferm_leg = [r'dark', r'b', r'c', r'u', r'd', r't', r's', r'e',
+                    r'$\mu$', r'$\tau$']
+        clist = ['black', 'cyan', 'goldenrod', 'darkviolet', 'blue', 'green', 'red',
+                 'saddlebrown', 'lightcoral', 'magenta']
+
+        brats = np.zeros(plt_therm.size * len(ferms)).reshape((plt_therm.size, len(ferms)))
+
+        for j, cup in enumerate(plt_therm):
+            cpass = np.sqrt(cup)
+            for k, ff in enumerate(ferms):
+                brats[j, k] = b_ratio_calc(cpass, channel[i], dm_spin[i], dm_real[i], dm_type[i],
+                                            dm_mass[i], mediator[i], ff, med_full[j],
+                                            fm_couplings, dm_couplings, 0.)
+            brats[j, :] /= np.sum(brats[j, :])
+
+
+        fig_name = plot_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                              dm_bilinear[i], channel[i], ferm_bilinear[i], extra_tag='B_RATIO')
+        file_name = file_namer(dm_spin[i], dm_real[i], dm_type[i], dm_mass[i], mediator[i],
+                               dm_bilinear[i], channel[i], ferm_bilinear[i], extra_tag='B_RATIO')
+
+        fig = plt.figure(figsize=(8., 6.))
+        ax = plt.gca()
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+
+        for j in range(len(ferms)):
+            plt.plot(med_full, brats[:, j], lw=2, color=clist[j])
+
+        np.savetxt(file_name, np.column_stack((med_full, brats)))
+
+        pl.ylim([10. ** -3., 1.5])
+        pl.xlim([1., 1000.])
+
+        legtop = -1.
+        legdown = .15
+        for j in range(len(ferms)):
+            plt.text(800., 10**(legtop - j * legdown), ferm_leg[j],
+                     horizontalalignment='right', verticalalignment='top', fontsize=14, color=clist[j])
+
+        if mediator[i] == 's':
+            pl.xlabel(r'$m_{\rm{a}}$   [GeV]', fontsize=20)
+        elif mediator[i] == 'v':
+            pl.xlabel(r'$m_{\rm{v}}$   [GeV]', fontsize=20)
+        elif mediator[i] == 'f':
+            pl.xlabel(r'$m_{{\psi}}$   [GeV]', fontsize=20)
+
+        pl.ylabel(r'$\Gamma_i / \Gamma$ ', fontsize=20)
 
         fig.set_tight_layout(True)
         pl.savefig(fig_name)
