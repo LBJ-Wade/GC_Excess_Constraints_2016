@@ -63,6 +63,10 @@ class fermionic_dm_spin0_med_schannel(object):
             gxs = self.lam_chi_s
             gfp = lam_f_p
             gfs = lam_f_s
+
+            if up_like(channel):
+                gfs /= self.tbeta
+                gfp /= self.tbeta
             
             sv += nc*((gxp**2*np.sqrt(self.mx**2*(self.mx**2 - mass_f**2))*
                       (self.mx**2*gfp**2 + self.mx**2*gfs**2 - gfs**2*mass_f**2))/(2.*np.sqrt(self.mx**4)*
@@ -165,8 +169,8 @@ class fermionic_dm_spin0_med_schannel(object):
                 gfs = mass_f * np.sqrt(self.lam_f_s * (self.lam_chi_p + self.lam_chi_s) / self.c_ratio) * yuk
                 gfp = mass_f * np.sqrt(self.lam_f_p * (self.lam_chi_p + self.lam_chi_s) / self.c_ratio) * yuk
                 if up_like(f):
-                    gfs *= self.tbeta
-                    gfp *= self.tbeta
+                    gfs /= self.tbeta
+                    gfp /= self.tbeta
                 if 2. * mass_f < self.m_a:
                     width += nc*((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
                               np.sqrt(-4*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
@@ -356,8 +360,8 @@ class fermionic_dm_spin1_med_schannel(object):
                 gfa = np.sqrt((self.lam_chi_a + self.lam_chi_v)*self.lam_f_a / self.c_ratio)
                 gfv = np.sqrt((self.lam_chi_a + self.lam_chi_v)*self.lam_f_v / self.c_ratio)
                 if up_like(f):
-                    gfa *= self.tbeta
-                    gfv *= self.tbeta
+                    gfa /= self.tbeta
+                    gfv /= self.tbeta
                 if 2.*mass_f < self.m_v:
                     width += nc*((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
                               np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
@@ -498,8 +502,8 @@ class scalar_dm_spin0_med_schannel(object):
                 gfs = mass_f * np.sqrt(self.lam_f_s * self.lam_p / self.c_ratio) * yuk
                 gfp = mass_f * np.sqrt(self.lam_f_p * self.lam_p / self.c_ratio) * yuk
                 if up_like(f):
-                    gfs *= self.tbeta
-                    gfp *= self.tbeta
+                    gfs /= self.tbeta
+                    gfp /= self.tbeta
                 if 2. * mass_f < self.m_a:
                     width += nc * (((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
                                     np.sqrt(-4*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi))
@@ -636,8 +640,8 @@ class scalar_dm_spin1_med_schannel(object):
                 gfa = np.sqrt(self.lam_f_a * self.lam_p / self.c_ratio)
                 gfv = np.sqrt(self.lam_f_v * self.lam_p / self.c_ratio)
                 if up_like(f):
-                    gfv *= self.tbeta
-                    gfa *= self.tbeta
+                    gfv /= self.tbeta
+                    gfa /= self.tbeta
                 if 2. * mass_f < self.m_v:
                     width += nc * ((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
                                    np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(12.*(self.m_v**2)**1.5*Pi)
@@ -782,8 +786,8 @@ class vector_dm_spin0_med_schannel(object):
                 gfs = mass_f * np.sqrt(self.lam_f_s * self.lam_x / self.c_ratio) * yuk
                 gfp = mass_f * np.sqrt(self.lam_f_p * self.lam_x / self.c_ratio) * yuk
                 if up_like(f):
-                    gfs *= self.tbeta
-                    gfp *= self.tbeta
+                    gfs /= self.tbeta
+                    gfp /= self.tbeta
                 if 2. * mass_f < self.m_a:
                     width += nc * ((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
                                    np.sqrt(-4.*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
@@ -925,8 +929,8 @@ class vector_dm_spin1_med_schannel(object):
                 gfa = np.sqrt(self.lam_f_a * self.lam_x / self.c_ratio)
                 gfv = np.sqrt(self.lam_f_v * self.lam_x / self.c_ratio)
                 if up_like(f):
-                    gfa *= self.tbeta
-                    gfv *= self.tbeta
+                    gfa /= self.tbeta
+                    gfv /= self.tbeta
                 if 2. * mass_f < self.m_v:
                     width += nc * ((2*(-2*gfa**2 + gfv**2)*mass_f**2 + (gfa**2 + gfv**2)*self.m_v**2)*
                                    np.sqrt(-4.*mass_f**2*self.m_v**2 + self.m_v**4))/(3.*(self.m_v**2)**1.5*Pi)

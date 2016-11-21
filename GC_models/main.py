@@ -39,12 +39,12 @@ except KeyError:
     MAIN_PATH = os.getcwd() + '/../'
 
 # Interaction Information
-dm_spin = ['vector']  # scalar, fermion, vector
+dm_spin = ['fermion']  # scalar, fermion, vector
 dm_real = [T]
-dm_type = ['majorana']  # dirac, majorana
+dm_type = ['dirac']  # dirac, majorana
 dm_mass = [50.]   # We're using 35 GeV to annihilation to all fermions, 50 GeV if just to bb
 mediator = ['s']  # s = scalar, v = vector, f = fermion
-dm_bilinear = ['s']  # v=vector, av=axialvector, s=scalar, ps=pseudoscalar
+dm_bilinear = ['ps']  # v=vector, av=axialvector, s=scalar, ps=pseudoscalar
 ferm_bilinear = ['ps']
 channel = ['s']  # s or t
 
@@ -53,7 +53,7 @@ direct = [F]  # Calculate direct detection bounds
 lhc = [T]  # Calculate LHC bounds
 nwa_calc = T  # Calculate the NWA
 nwa_tbeta = T  # Calc NWA with tan(\beta) != 1.
-tbeta = 0.5  # Value of tan(\beta) \equiv \lambda_up / \lambda_down
+tbeta = 0.5  # Value of tan(\beta) \equiv \lambda_down / \lambda_up
 thermal_coups = T  # Calculate thermal couplings
 csec_plots = T  # Make cross section plots
 b_ratios = T  # Make plots of branching ratios
