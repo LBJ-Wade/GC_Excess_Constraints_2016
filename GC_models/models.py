@@ -23,21 +23,6 @@ class fermionic_dm_spin0_med_schannel(object):
         self.c_ratio = c_ratio
         self.tbeta = tbeta
 
-    def sigma(self, s):
-        sigma = 0.
-        gamma = self.mediator_width()
-        for i, ferm in enumerate(self.f):
-            nc = color_number(ferm)
-            mass_f = get_mass(ferm)
-            lam_f_s = self.lam_f_s * mass_f * yuk
-            lam_f_p = self.lam_f_p * mass_f * yuk
-            sigma += (nc / (16. * np.pi * s * ((s - self.m_a ** 2.) ** 2. + (self.m_a * gamma) ** 2.)) *
-                np.sqrt((1. - 4. * mass_f ** 2. / s) / (1. - 4. * self.mx ** 2. / s)) *
-                (lam_f_s ** 2. * (s - 4. * mass_f ** 2.) + lam_f_p ** 2. * s) *
-                (self.lam_chi_s ** 2. * (s - 4. * self.mx ** 2.) + self.lam_chi_p ** 2. * s))
-        return sigma
-
-
     def sigma_v_all(self, v):
         sigma = 0.
         for ferm in self.f:
@@ -171,6 +156,7 @@ class fermionic_dm_spin0_med_schannel(object):
                 if up_like(f):
                     gfs /= self.tbeta
                     gfp /= self.tbeta
+
                 if 2. * mass_f < self.m_a:
                     width += nc*((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
                               np.sqrt(-4*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)
@@ -788,6 +774,7 @@ class vector_dm_spin0_med_schannel(object):
                 if up_like(f):
                     gfs /= self.tbeta
                     gfp /= self.tbeta
+
                 if 2. * mass_f < self.m_a:
                     width += nc * ((-4*gfs**2*mass_f**2 + (gfp**2 + gfs**2)*self.m_a**2)*
                                    np.sqrt(-4.*mass_f**2*self.m_a**2 + self.m_a**4))/(8.*(self.m_a**2)**1.5*Pi)

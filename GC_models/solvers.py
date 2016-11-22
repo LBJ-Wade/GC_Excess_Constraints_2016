@@ -33,10 +33,14 @@ def t_coupling_omega(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
 
 def narrow_width(lam, channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
                 ferms, m_a, fm_couplings, dm_couplings, wid, cratio=1., tbeta=1.):
+
     new_coups = np.zeros_like(dm_couplings)
     new_coups[dm_couplings != 0.] = 10. ** lam
+    new_coups_f = np.zeros_like(fm_couplings)
+    new_coups_f[fm_couplings != 0.] = 10. ** lam
+
     dm_class = build_dm_class(channel, dm_spin, dm_real, dm_type, dm_mass, mediator,
-                              ferms, m_a, new_coups, fm_couplings, cratio, tbeta)
+                              ferms, m_a, new_coups, new_coups_f, cratio, tbeta)
     width = dm_class.mediator_width()
 
     return np.abs(width / m_a - wid)

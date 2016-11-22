@@ -43,17 +43,17 @@ dm_spin = ['fermion']  # scalar, fermion, vector
 dm_real = [T]
 dm_type = ['dirac']  # dirac, majorana
 dm_mass = [50.]   # We're using 35 GeV to annihilation to all fermions, 50 GeV if just to bb
-mediator = ['s']  # s = scalar, v = vector, f = fermion
-dm_bilinear = ['ps']  # v=vector, av=axialvector, s=scalar, ps=pseudoscalar
-ferm_bilinear = ['ps']
+mediator = ['v']  # s = scalar, v = vector, f = fermion
+dm_bilinear = ['v']  # v=vector, av=axialvector, s=scalar, ps=pseudoscalar
+ferm_bilinear = ['v']
 channel = ['s']  # s or t
 
 # What would you like to Calculate
 direct = [F]  # Calculate direct detection bounds
 lhc = [T]  # Calculate LHC bounds
 nwa_calc = T  # Calculate the NWA
-nwa_tbeta = T  # Calc NWA with tan(\beta) != 1.
-tbeta = 0.5  # Value of tan(\beta) \equiv \lambda_down / \lambda_up
+nwa_tbeta = F  # Calc NWA with tan(\beta) != 1.
+tbeta = 1.  # Value of tan(\beta) \equiv \lambda_down / \lambda_up
 thermal_coups = T  # Calculate thermal couplings
 csec_plots = T  # Make cross section plots
 b_ratios = T  # Make plots of branching ratios
@@ -294,7 +294,7 @@ for i in range(candidates):
             solve_wid_tb_3 = fmin(narrow_width, 2., args=(channel[i], dm_spin[i], dm_real[i], dm_type[i],
                                                       dm_mass[i], mediator[i], ferms, m_a,
                                                       fm_couplings, dm_couplings, 0.1, 3., tbeta), disp=False)
-
+            
             wid_cup_tbeta_3[j] = np.power(10., 2. * solve_wid_tb_3)
 
         np.savetxt(nwa_name1, np.column_stack((mass_med, width_cups)))
@@ -330,7 +330,7 @@ for i in range(candidates):
                 med_full1, plt_therm_c1 = [load1[:, 0], load1[:, 1]]
                 pts1 = np.power(10, interpola(np.log10(mlarge), np.log10(med_full1), np.log10(plt_therm_c1)))
                 chold = np.argmax(pts1 > pts)
-                pts1 = np.append(pts1[:chold],pts[chold])
+                pts1 = np.append(pts1[:chold], pts[chold])
                 mplt = mlarge[:chold+1]
                 plt.plot(mplt, pts1, lw=1, color='k')
 
